@@ -70,24 +70,18 @@ fi
 if [ "$is_laptop" == "y" ]; then
     read -p "How much RAM do you have (in GB)? " ram
     swap_size=$(echo
-
 # Install nano and neofetch
 pacman -S nano neofetch
-
 # Install base and base-devel packages
 pacman -S base base-devel
-
 # Generate fstab
 genfstab /mnt >> /mnt/etc/fstab
 genfstab -U /mnt >> /mnt/etc/fstab
-
 # Arch-chroot
 arch-chroot /mnt
-
 # Install NetworkManager
 pacman -S networkmanager
 systemctl enable NetworkManager
-
 # Install GRUB
 if [ "$is_uefi" == "y" ]; then
     pacman -S grub efibootmgr
@@ -97,12 +91,10 @@ else
     grub-install --target=i386-pc ${drive}
 fi
 grub-mkconfig -o /boot/grub/grub.cfg
-
 # Set root
 read -p "What would you like the root password to be?"
 echo "Enter the root password:"
 read -s root_password
-
 if [ -z "$root_password" ]; then
     echo "Root user is disabled."
 else
@@ -110,11 +102,9 @@ else
     echo "Root password entered: $root_password"
 read -p "Root user is successfully enabled"
 fi
-
 # Setting Desktop Enviroment 
 echo "Which desktop environment would you like to install? (gnome, kde, xfce, lxde, type skip to skip this step)"
 read desktop
-
 if [ $desktop == "gnome" ]; then
   pacman -S gnome
 elif [ $desktop == "kde" ]; then
@@ -126,11 +116,9 @@ elif [ $desktop == "lxde" ]; then
 elif [ $desktop == "skip"; then
   echo "Do you want to skip selecting a desktop environment? (y/n)"
 read skip_desktop
-
 if [ $skip_desktop == "n" ]; then
   echo "Which desktop environment would you like to install? (gnome, kde, xfce, lxde)"
   read desktop
-
   if [ $desktop == "gnome" ]; then
     pacman -S gnome
   elif [ $desktop == "kde" ]; then
@@ -146,14 +134,12 @@ if [ $skip_desktop == "n" ]; then
 else
   echo "Skipping desktop environment selection."
 fi
-
 else
   echo "Invalid selection."
   exit
 fi
 echo "Which display server would you like to use? (xorg, wayland)"
 read display_server
-
 if [ $display_server == "xorg" ]; then
   pacman -S xorg-server
 elif [ $display_server == "wayland" ]; then
@@ -162,7 +148,6 @@ else
   echo "Invalid selection."
   exit
 fi
-
 #Checking if user has an nvidia card
 nvidia_check=$(lspci | grep -i nvidia)
 if [ -n "$nvidia_check" ]; then
@@ -190,6 +175,5 @@ fi
 #Unmounting drives and rebooting
 umount -R /mnt
 echo "Unmounting all file systems."
-
 echo "The script is finished. The computer will now reboot."
 reboot
