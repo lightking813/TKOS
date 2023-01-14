@@ -24,27 +24,29 @@ fi
 
 # Create boot partition
 if [ "$is_uefi" == true ]; then
-echo -e "n\np\n1\n\n+300M\nw\n" | fdisk ${drive}
+    echo "label: gpt" | sfdisk ${drive}
+    echo ",300M,ef00" | sfdisk --append ${drive}
     mkfs.fat -F 32 /dev/${drive}1
 else
-echo -e "n\np\n1\n\n+200M\nw\n" | fdisk ${drive}
+    echo "label: gpt" | sfdisk ${drive}
+    echo ",200M,83" | sfdisk --append ${drive}
     mkfs.ext4 /dev/${drive}1
 fi
 
 # Create root partition
-echo -e "n\np\n1\n\n+25G\nw" | fdisk ${drive}
-mkfs.ext4 ${drive}3
+echo ",25G,83" | sfdisk --append ${drive}
+mkfs.ext4 ${drive}2
 
 # Create home partition
-home_size="+100%"
-mkfs.ext4 ${drive}4
+echo ",100%,83" | sfdisk --append ${drive}
+mkfs.ext4 ${drive}3
 
 # Mount partitions
-mount ${drive}3 /mnt
+mount ${drive}2 /mnt
 mkdir /mnt/boot
 mount ${drive}1 /mnt/boot
 mkdir /mnt/home
-mount ${drive}4 /mnt/home
+mount ${drive}3 /mnt/home
 
 # Make sure the drive is at least 500GB
 hdd_size=$(lsblk -b | grep -w ${drive} | awk '{print $4}')
@@ -52,23 +54,17 @@ if [ $hdd_size -gt 500000000000 ]; then
   echo "Hard drive is greater than 500GB."
   echo "Enter desired swap partition size (in GB): "
   read swap_size
-then
-    echo "Creating swap partition of size $swap_size GB."
-    mkswap -L swap -f ${drive}2 ${drive}2+${swap_size}G
-    swapon ${drive}2
-  fi
+    echo ",$swap_size"G",82" | sfdisk --append ${drive}
+    mkswap ${drive}4
+    swapon ${drive}4
 else
   echo "Hard drive is less than 500GB."
-  echo "Enter desired swap partition size (in GB, less than 8GB)" "
+  echo "Enter desired swap partition size (in GB, less than 8GB): "
   read swap_size
   if [ $swap_size -lt 8]; then
      echo "Invalid swap size. Swap partition must be less than 8GB."
   exit
 fi
-# If on a laptop, ask for amount of RAM and create a swap partition
-if [ "$is_laptop" == "y" ]; then
-    read -p "How much RAM do you have (in GB)? " ram
-    swap_size=$(echo)
 # Install Pre-req's
 pacstrap /mnt base base-devel
 # Install base and base-devel packages
