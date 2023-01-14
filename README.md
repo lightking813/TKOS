@@ -6,7 +6,7 @@ To run the script first run these commands in order
 
 pacman -Sy git
 
-git clone https://www.github.com/lightking813/TKOS/install.sh
+git clone https://github.com/lightking813/TKOS/install.sh
 
 cd TKOS
 
