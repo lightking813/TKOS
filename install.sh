@@ -138,15 +138,49 @@ else
   echo "Invalid selection."
   exit
 fi
-echo "Which display server would you like to use? (xorg, wayland)"
-read display_server
-if [ $display_server == "xorg" ]; then
-  pacman -S xorg-server
-elif [ $display_server == "wayland" ]; then
-  pacman -S wayland
-else
-  echo "Invalid selection."
-  exit
+# Setting Desktop Enviroment 
+echo "Which desktop environment would you like to install? (gnome, kde, xfce, Cinnamon, type skip to skip this step)"
+read desktop
+if [ $desktop == "gnome" ]; then
+  pacman -S gnome
+  echo "Which display server would you like to use? (xorg, wayland)"
+  read display_server
+  if [ $display_server == "xorg" ]; then
+    pacman -S xorg-server
+    systemctl enable gdm.service
+  elif [ $display_server == "wayland" ]; then
+    pacman -S wayland
+    systemctl enable gdm.service
+  else
+    echo "Invalid selection."
+    exit
+  fi
+elif [ $desktop == "kde" ]; then
+  pacman -S kde
+  echo "Which display server would you like to use? (xorg, wayland)"
+  read display_server
+  if [ $display_server == "xorg" ]; then
+    pacman -S xorg-server
+    systemctl enable sddm.service
+  elif [ $display_server == "wayland" ]; then
+    pacman -S wayland
+    systemctl enable sddm.service
+  else
+    echo "Invalid selection."
+    exit
+  fi
+elif [ $desktop == "xfce" ]; then
+  pacman -S xfce
+  echo "Which display server would you like to use? (xorg, wayland)"
+  read display_server
+  if [ $display_server == "xorg" ]; then
+    pacman -S xorg-server
+    systemctl enable lightdm.service
+  elif [ $display_server == "wayland" ]; then
+    pacman -S wayland
+    systemctl enable lightdm.service
+  else
+    echo
 fi
 #Checking if user has an nvidia card
 nvidia_check=$(lspci | grep -i nvidia)
@@ -176,4 +210,5 @@ fi
 umount -R /mnt
 echo "Unmounting all file systems."
 echo "The script is finished. The computer will now reboot."
+echo "Thank you for using my script $username :)"
 reboot
