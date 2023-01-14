@@ -4,11 +4,12 @@ desktop environments or DIY after installation, compatibility checks for Nvidia 
 
 To run the script first run these commands in order
 
-pacman -Sy
+pacman -Sy git
 
-curl -LO github.com/lightking813/TKOS/install.sh
+git clone https://www.github.com/lightking813/TKOS/install.sh
+
+cd TKOS
 
 sh install.sh
 
 
-(make sure u are using the letter when u use -LO (that is a capital o and not a zero)
