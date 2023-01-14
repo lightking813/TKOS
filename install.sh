@@ -16,16 +16,10 @@ lsblk
 # Ask user which drive to install Arch on
 read -p "Which drive do you want to install Arch on? (e.g. sda) " drive
 drive_path="/dev/$drive"
-chmod 777 $drive_path
 # Ask user if they want to delete all partitions on the drive
 read -p "Do you want to delete all partitions on the drive? (y/n) " choice
 if [ "$choice" == "y" ]; then
     sgdisk --zap-all $drive
-fi
-# Check if system is UEFI or BIOS
-is_uefi=false
-if [ -d "/sys/firmware/efi/" ]; then
-    is_uefi=true
 fi
 
 # Create a new GPT partition table
@@ -33,15 +27,12 @@ sgdisk --zap-all $drive_path
 
 # Create boot partition
 if [ "$is_uefi" == true ]; then
-  # Create boot partition
-  sgdisk --new=1:0:+300M --typecode=1:ef00 $drive
-  mkfs.fat -F 32 ${drive}1
+    sgdisk --new=1:0:+300M --typecode=1:ef00 $drive
+    mkfs.fat -F 32 ${drive}1
 else
-  # Create boot partition
-  sgdisk --new=1:0:+200M --typecode=1:8300 $drive
-  mkfs.ext4 ${drive}1
+    sgdisk --new=1:0:+200M $drive
+    mkfs.ext4 ${drive}1
 fi
-
 
 # Create root partition
 sgdisk --new=2:0:+25G --typecode=2:8300 $drive_path
@@ -101,7 +92,7 @@ else
 read -p "Root user is successfully enabled"
 fi
 # Setting Desktop Enviroment 
-echo "Which desktop environment would you like to install? (gnome, kde, xfce, lxde, type skip to skip this step)"
+echo "Which desktop environment would you like to install? (gnome, kde, xfce, Cinnamon, type skip to skip this step)"
 read desktop
 if [ $desktop == "gnome" ]; then
   pacman -S gnome
@@ -119,17 +110,27 @@ if [ $skip_desktop == "n" ]; then
   read desktop
   if [ $desktop == "gnome" ]; then
     pacman -S gnome
-    useradd
+    systemctl enable gdm.service
   elif [ $desktop == "kde" ]; then
     pacman -S kde
   elif [ $desktop == "xfce" ]; then
     pacman -S xfce
-  elif [ $desktop == "lxde" ]; then
-    pacman -S lxde
+  elif [ $desktop == "Cinnamon" ]; then
+    pacman -S cinnamon
+    systemctl enable gdm.service
   else
     echo "Invalid selection."
     exit
   fi
+  # Ask user if they want to install Pamac package manager
+read -p "Do you want to install a Package Manager? (It works like an appstore) (y/n) " pm
+
+if [ "$pm" == "y" ]; then
+    pacman -S pamac
+    echo "Pamac has been installed. Use the Pamac GUI or the 'pamac' command to search and install packages."
+else
+    echo "A package manager has not been installed. Use 'pacman' command to search and install packages."
+fi
 else
   echo "Skipping desktop environment selection."
 fi
