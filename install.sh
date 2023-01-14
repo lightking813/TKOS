@@ -16,7 +16,11 @@ lsblk
 # Ask user which drive to install Arch on
 read -p "Which drive do you want to install Arch on? (e.g. sda) " drive
 drive_path="/dev/$drive"
-
+# Ask user if they want to delete all partitions on the drive
+read -p "Do you want to delete all partitions on the drive? (y/n) " choice
+if [ "$choice" == "y" ]; then
+    sgdisk --zap-all $drive
+fi
 # Check if system is UEFI or BIOS
 is_uefi=false
 if [ -d "/sys/firmware/efi/" ]; then
@@ -106,7 +110,7 @@ elif [ $desktop == "xfce" ]; then
   pacman -S xfce
 elif [ $desktop == "lxde" ]; then
   pacman -S lxde
-elif [ $desktop == "skip"; then
+elif [ $desktop == "skip" ]; then
   echo "Do you want to skip selecting a desktop environment? (y/n)"
 read skip_desktop
 if [ $skip_desktop == "n" ]; then
