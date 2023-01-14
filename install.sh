@@ -14,7 +14,11 @@ fi
 lsblk
 
 # Ask user which drive to install Arch on
-read -p "Which drive do you want to install Arch on? (e.g. /dev/sda) " drive
+read -p "Which drive do you want to install Arch on? (e.g. sda) " drive
+drive="/dev/$(readlink -f /dev/$drive)"
+
+# Convert partition table to GPT
+gdisk $drive
 
 # Check if the drive is an NVME
 is_nvme=false
@@ -22,24 +26,17 @@ if [[ $drive == *"nvme"* ]]; then
     is_nvme=true
 fi
 
+# Create a new GPT partition table
+sgdisk --zap-all $drive
+
 # Create boot partition
-if [ "$is_uefi" == true ]; then
-    echo "label: gpt" | sfdisk ${drive}
-    echo ",300M,ef00" | sfdisk --append ${drive}
-    mkfs.fat -F 32 /dev/${drive}1
-else
-    echo "label: gpt" | sfdisk ${drive}
-    echo ",200M,83" | sfdisk --append ${drive}
-    mkfs.ext4 /dev/${drive}1
-fi
+sgdisk --new=1:0:+300M $drive
 
 # Create root partition
-echo ",25G,83" | sfdisk --append ${drive}
-mkfs.ext4 ${drive}2
+sgdisk --new=2:0:+25G $drive
 
 # Create home partition
-echo ",100%,83" | sfdisk --append ${drive}
-mkfs.ext4 ${drive}3
+sgdisk --new=3:0:0 $drive
 
 # Mount partitions
 mount ${drive}2 /mnt
