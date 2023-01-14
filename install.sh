@@ -22,58 +22,57 @@ if [[ $drive == *"nvme"* ]]; then
     is_nvme=true
 fi
 
-# Use fdisk to create partitions
-fdisk $drive
-
 # Create boot partition
 if [ "$is_uefi" == true ]; then
-    boot_size="+300M"
-    mkfs.fat -F 32 ${drive}1
+echo -e "n\np\n1\n\n+300M\nw" | fdisk $drive
+    mkfs.fat -F 32 /dev/${drive}1
 else
-    boot_size="+200M"
-    mkfs.ext4 ${drive}1
+echo -e "n\np\n1\n\n+200M\nw" | fdisk $drive
+    mkfs.ext4 /dev/${drive}1
 fi
 
 # Create root partition
-root_size="+25G"
-mkfs.ext4 ${drive}2
+echo -e "n\np\n1\n\n+25G\nw" | fdisk $drive
+mkfs.ext4 ${drive}3
 
 # Create home partition
 home_size="+100%"
-mkfs.ext4 ${drive}3
+mkfs.ext4 ${drive}4
 
 # Mount partitions
-mount ${drive}2 /mnt
+mount ${drive}3 /mnt
 mkdir /mnt/boot
 mount ${drive}1 /mnt/boot
 mkdir /mnt/home
-mount ${drive}3 /mnt/home
+mount ${drive}4 /mnt/home
 
 # Make sure the drive is at least 500GB
-hdd_size=$(lsblk -b | grep -w 'sda' | awk '{print $4}')
+hdd_size=$(lsblk -b | grep -w ${drive} | awk '{print $4}')
 if [ $hdd_size -gt 500000000000 ]; then
   echo "Hard drive is greater than 500GB."
-  echo "Enter desired swap partition size (in GB, minimum 12GB): "
+  echo "Enter desired swap partition size (in GB): "
   read swap_size
-  if [ $swap_size -lt 12 ]; then
-    echo "Invalid swap size. Swap partition must be at least 12GB."
-    exit
-  else
+then
     echo "Creating swap partition of size $swap_size GB."
-    # commands to create the swap partition with the specified size
+    mkswap -L swap -f ${drive}2 ${drive}2+${swap_size}G
+    swapon ${drive}2
   fi
 else
   echo "Hard drive is less than 500GB."
+  echo "Enter desired swap partition size (in GB, less than 8GB)" "
+  read swap_size
+  if [ $swap_size -lt 8]; then
+     echo "Invalid swap size. Swap partition must be less than 8GB."
   exit
 fi
 # If on a laptop, ask for amount of RAM and create a swap partition
 if [ "$is_laptop" == "y" ]; then
     read -p "How much RAM do you have (in GB)? " ram
-    swap_size=$(echo
-# Install nano and neofetch
-pacman -S nano neofetch
+    swap_size=$(echo)
+# Install Pre-req's
+pacstrap /mnt base base-devel
 # Install base and base-devel packages
-pacman -S base base-devel
+pacman -S neofetch nano
 # Generate fstab
 genfstab /mnt >> /mnt/etc/fstab
 genfstab -U /mnt >> /mnt/etc/fstab
@@ -121,6 +120,7 @@ if [ $skip_desktop == "n" ]; then
   read desktop
   if [ $desktop == "gnome" ]; then
     pacman -S gnome
+    useradd
   elif [ $desktop == "kde" ]; then
     pacman -S kde
   elif [ $desktop == "xfce" ]; then
