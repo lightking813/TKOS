@@ -275,10 +275,8 @@ elif [ $desktop == "Cinnamon" ]; then
  fi
         desktop_selected=true
     fi
-done
-
+    
 if
-
 skip_desktop=true
 while [ $skip_desktop == true ]
 do
@@ -291,7 +289,8 @@ do
             skip_desktop=false
         fi
     else
-
+    
+done
   # Ask user if they want to install Pamac package manager
 read -p "Do you want to install a Package Manager? (It works like an appstore) (y/n) " pm
 
@@ -342,7 +341,7 @@ useradd -m -g wheel $username
 echo "do you want to disable root user? (y/n)"
 read disable_root
 if [ $disable_root == "y" ]; then
-  # Insert code for disabling root user here
+  passwd -l root
 fi
 #Unmounting drives and rebooting
 umount -R /mnt
