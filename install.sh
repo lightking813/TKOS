@@ -288,9 +288,7 @@ do
         if [ $skip_desktop == "n" ]; then
             skip_desktop=false
         fi
-    else
-    
-done
+    done
   # Ask user if they want to install Pamac package manager
 read -p "Do you want to install a Package Manager? (It works like an appstore) (y/n) " pm
 
