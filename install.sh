@@ -16,6 +16,7 @@ lsblk
 # Ask user which drive to install Arch on
 read -p "Which drive do you want to install Arch on? (e.g. sda) " drive
 drive_path="/dev/$drive"
+chmod 777 $drive_path
 # Ask user if they want to delete all partitions on the drive
 read -p "Do you want to delete all partitions on the drive? (y/n) " choice
 if [ "$choice" == "y" ]; then
