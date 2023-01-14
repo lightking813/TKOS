@@ -15,10 +15,13 @@ lsblk
 
 # Ask user which drive to install Arch on
 read -p "Which drive do you want to install Arch on? (e.g. sda) " drive
-drive="/dev/$(readlink -f /dev/$drive)"
+drive_path="/dev/$drive"
+
+# Overwrite the MBR
+dd if=/dev/zero of=$drive_path bs=512 count=1
 
 # Convert partition table to GPT
-gdisk $drive
+gdisk $drive_path
 
 # Check if the drive is an NVME
 is_nvme=false
