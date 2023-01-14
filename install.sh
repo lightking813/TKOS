@@ -17,53 +17,48 @@ lsblk
 read -p "Which drive do you want to install Arch on? (e.g. sda) " drive
 drive_path="/dev/$drive"
 
-# Overwrite the MBR
-dd if=/dev/zero of=$drive_path bs=512 count=1
-
-# Convert partition table to GPT
-gdisk $drive_path
-
-# Check if the drive is an NVME
-is_nvme=false
-if [[ $drive == *"nvme"* ]]; then
-    is_nvme=true
+# Check if system is UEFI or BIOS
+is_uefi=false
+if [ -d "/sys/firmware/efi/" ]; then
+    is_uefi=true
 fi
 
 # Create a new GPT partition table
-sgdisk --zap-all $drive
+sgdisk --zap-all $drive_path
 
 # Create boot partition
-sgdisk --new=1:0:+300M $drive
+if [ "$is_uefi" == true ]; then
+    sgdisk --new=1:0:+300M --typecode=1:ef00 $drive_path
+    mkfs.fat -F 32 ${drive}1
+else
+    sgdisk --new=1:0:+200M --typecode=1:8300 $drive_path
+    mkfs.ext4 ${drive}1
+fi
 
 # Create root partition
-sgdisk --new=2:0:+25G $drive
-
-# Create home partition
-sgdisk --new=3:0:0 $drive
-
-# Mount partitions
-mount ${drive}2 /mnt
-mkdir /mnt/boot
-mount ${drive}1 /mnt/boot
-mkdir /mnt/home
-mount ${drive}3 /mnt/home
+sgdisk --new=2:0:+25G --typecode=2:8300 $drive_path
+mkfs.ext4 ${drive}3
+mount ${drive}3 /mnt
 
 # Make sure the drive is at least 500GB
 hdd_size=$(lsblk -b | grep -w ${drive} | awk '{print $4}')
 if [ $hdd_size -gt 500000000000 ]; then
   echo "Hard drive is greater than 500GB."
-  echo "Enter desired swap partition size (in GB): "
-  read swap_size
-    echo ",$swap_size"G",82" | sfdisk --append ${drive}
-    mkswap ${drive}4
-    swapon ${drive}4
+  read -p "Enter desired swap partition size (in GB): " swap_size
+  swap_size=$((swap_size*1.5))
+  sgdisk --new=3:0:+"$swap_size"G --typecode=3:8200 $drive_path
+  mkswap ${drive}2
+  swapon ${drive}2
 else
-  echo "Hard drive is less than 500GB."
-  echo "Enter desired swap partition size (in GB, less than 8GB): "
-  read swap_size
-  if [ $swap_size -lt 8]; then
-     echo "Invalid swap size. Swap partition must be less than 8GB."
-  exit
+echo "Hard drive is less than 500GB."
+  read -p "Enter desired swap partition size (in GB, less than 8GB): " swap_size
+  if [ $swap_size -gt 8 ]; then
+    echo "Invalid swap size. Swap partition must be less than 8GB."
+    exit
+  fi
+  sgdisk --new=3:0:+"$swap_size"G --typecode=3:8200 $drive_path
+  mkswap ${drive}2
+  swapon ${drive}2
 fi
 # Install Pre-req's
 pacstrap /mnt base base-devel
