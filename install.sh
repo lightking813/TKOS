@@ -28,12 +28,15 @@ sgdisk --zap-all $drive_path
 
 # Create boot partition
 if [ "$is_uefi" == true ]; then
-    sgdisk --new=1:0:+300M --typecode=1:ef00 $drive_path
-    mkfs.fat -F 32 ${drive}1
+  # Create boot partition
+  sgdisk --new=1:0:+300M --typecode=1:ef00 $drive
+  mkfs.fat -F 32 ${drive}1
 else
-    sgdisk --new=1:0:+200M --typecode=1:8300 $drive_path
-    mkfs.ext4 ${drive}1
+  # Create boot partition
+  sgdisk --new=1:0:+200M --typecode=1:8300 $drive
+  mkfs.ext4 ${drive}1
 fi
+
 
 # Create root partition
 sgdisk --new=2:0:+25G --typecode=2:8300 $drive_path
