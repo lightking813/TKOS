@@ -343,7 +343,7 @@ echo "do you want to disable root user? (y/n)"
 read disable_root
 if [ $disable_root == "y" ]; then
   # Insert code for disabling root user here
-
+fi
 #Unmounting drives and rebooting
 umount -R /mnt
 echo "Unmounting all file systems."
