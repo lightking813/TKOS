@@ -91,37 +91,207 @@ else
     echo "Root password entered: $root_password"
 read -p "Root user is successfully enabled"
 fi
-# Setting Desktop Enviroment 
-echo "Which desktop environment would you like to install? (gnome, kde, xfce, Cinnamon, type skip to skip this step)"
-read desktop
+# Setting hostname
+read -p "Enter the hostname: " hostname
+echo $hostname > /etc/hostname
+# Setting Desktop Enviroment
+desktop_selected=false
+while [ $desktop_selected == false ]
+do
+    echo "Which desktop environment would you like to install? (gnome, kde, xfce, Cinnamon, type skip to skip this step)"
+    read desktop
+    if [ $desktop == "skip" ]; then
+        echo "Do you want to skip selecting a desktop environment? (y/n)"
+        read skip_desktop
+        if [ $skip_desktop == "n" ]; then
+# gnome desktop environment
 if [ $desktop == "gnome" ]; then
   pacman -S gnome
-elif [ $desktop == "kde" ]; then
-  pacman -S kde
-elif [ $desktop == "xfce" ]; then
-  pacman -S xfce
-elif [ $desktop == "lxde" ]; then
-  pacman -S lxde
-elif [ $desktop == "skip" ]; then
-  echo "Do you want to skip selecting a desktop environment? (y/n)"
-read skip_desktop
-if [ $skip_desktop == "n" ]; then
-  echo "Which desktop environment would you like to install? (gnome, kde, xfce, lxde)"
-  read desktop
-  if [ $desktop == "gnome" ]; then
-    pacman -S gnome
+  echo "Which display server would you like to use? (xorg, wayland)"
+  read display_server
+  if [ $display_server == "xorg" ]; then
+    pacman -S xorg-server
     systemctl enable gdm.service
-  elif [ $desktop == "kde" ]; then
-    pacman -S kde
-  elif [ $desktop == "xfce" ]; then
-    pacman -S xfce
-  elif [ $desktop == "Cinnamon" ]; then
-    pacman -S cinnamon
+    echo "exec gnome-session" >> /etc/X11/xinit/xinitrc
+  elif [ $display_server == "wayland" ]; then
+    pacman -S wayland
     systemctl enable gdm.service
+    echo "exec gnome-session" >> /etc/X11/xinit/xinitrc
   else
     echo "Invalid selection."
     exit
   fi
+    
+# kde desktop environment
+elif [ $desktop == "kde" ]; then
+  pacman -S kde
+  echo "Which display server would you like to use? (xorg, wayland)"
+  read display_server
+  if [ $display_server == "xorg" ]; then
+    pacman -S xorg-server
+    systemctl enable sddm.service
+    echo "exec startplasma-x11" >> /etc/X11/xinit/xinitrc
+  elif [ $display_server == "wayland" ]; then
+    pacman -S wayland
+    systemctl enable sddm.service
+    echo "exec startplasma" >> /etc/X11/xinit/xinitrc
+  else
+    echo "Invalid selection."
+    exit
+  fi
+# xfce desktop environment
+elif [ $desktop == "xfce" ]; then
+  pacman -S xfce
+  echo "Which display server would you like to use? (xorg, wayland)"
+  read display_server
+  if [ $display_server == "xorg" ]; then
+    pacman -S xorg-server
+    systemctl enable lightdm.service
+    echo "exec startxfce4" >> /etc/X11/xinit/xinitrc
+  elif [ $display_server == "wayland" ]; then
+    pacman -S wayland
+    systemctl enable lightdm.service
+    echo "exec startxfce4" >> /etc/X11/xinit/xinitrc
+  else
+    echo "Invalid selection."
+    exit
+  fi
+# xfce desktop environment
+elif [ $desktop == "xfce" ]; then
+  pacman -S xfce
+  echo "Which display server would you like to use? (xorg, wayland)"
+  read display_server
+  if [ $display_server == "xorg" ]; then
+    pacman -S xorg-server
+    systemctl enable lightdm.service
+    echo "exec startxfce4" >> /etc/X11/xinit/xinitrc
+  elif [ $display_server == "wayland" ]; then
+    pacman -S wayland
+    systemctl enable lightdm.service
+    echo "exec startxfce4" >> /etc/X11/xinit/xinitrc
+  else
+    echo "Invalid selection."
+    exit
+  fi
+  # Cinnamon desktop environment
+elif [ $desktop == "Cinnamon" ]; then
+  pacman -S cinnamon
+  echo "Which display server would you like to use? (xorg, wayland)"
+  read display_server
+  if [ $display_server == "xorg" ]; then
+    pacman -S xorg-server
+    systemctl enable lightdm.service
+    echo "exec cinnamon-session" >> /etc/X11/xinit/xinitrc
+  elif [ $display_server == "wayland" ]; then
+    pacman -S wayland
+    systemctl enable lightdm.service
+    echo "exec cinnamon-session" >> /etc/X11/xinit/xinitrc
+ fi
+            desktop_selected=true
+        fi
+    else
+# gnome desktop environment
+if [ $desktop == "gnome" ]; then
+  pacman -S gnome
+  echo "Which display server would you like to use? (xorg, wayland)"
+  read display_server
+  if [ $display_server == "xorg" ]; then
+    pacman -S xorg-server
+    systemctl enable gdm.service
+    echo "exec gnome-session" >> /etc/X11/xinit/xinitrc
+  elif [ $display_server == "wayland" ]; then
+    pacman -S wayland
+    systemctl enable gdm.service
+    echo "exec gnome-session" >> /etc/X11/xinit/xinitrc
+  else
+    echo "Invalid selection."
+    exit
+  fi
+    
+# kde desktop environment
+elif [ $desktop == "kde" ]; then
+  pacman -S kde
+  echo "Which display server would you like to use? (xorg, wayland)"
+  read display_server
+  if [ $display_server == "xorg" ]; then
+    pacman -S xorg-server
+    systemctl enable sddm.service
+    echo "exec startplasma-x11" >> /etc/X11/xinit/xinitrc
+  elif [ $display_server == "wayland" ]; then
+    pacman -S wayland
+    systemctl enable sddm.service
+    echo "exec startplasma" >> /etc/X11/xinit/xinitrc
+  else
+    echo "Invalid selection."
+    exit
+  fi
+# xfce desktop environment
+elif [ $desktop == "xfce" ]; then
+  pacman -S xfce
+  echo "Which display server would you like to use? (xorg, wayland)"
+  read display_server
+  if [ $display_server == "xorg" ]; then
+    pacman -S xorg-server
+    systemctl enable lightdm.service
+    echo "exec startxfce4" >> /etc/X11/xinit/xinitrc
+  elif [ $display_server == "wayland" ]; then
+    pacman -S wayland
+    systemctl enable lightdm.service
+    echo "exec startxfce4" >> /etc/X11/xinit/xinitrc
+  else
+    echo "Invalid selection."
+    exit
+  fi
+# xfce desktop environment
+elif [ $desktop == "xfce" ]; then
+  pacman -S xfce
+  echo "Which display server would you like to use? (xorg, wayland)"
+  read display_server
+  if [ $display_server == "xorg" ]; then
+    pacman -S xorg-server
+    systemctl enable lightdm.service
+    echo "exec startxfce4" >> /etc/X11/xinit/xinitrc
+  elif [ $display_server == "wayland" ]; then
+    pacman -S wayland
+    systemctl enable lightdm.service
+    echo "exec startxfce4" >> /etc/X11/xinit/xinitrc
+  else
+    echo "Invalid selection."
+    exit
+  fi
+  # Cinnamon desktop environment
+elif [ $desktop == "Cinnamon" ]; then
+  pacman -S cinnamon
+  echo "Which display server would you like to use? (xorg, wayland)"
+  read display_server
+  if [ $display_server == "xorg" ]; then
+    pacman -S xorg-server
+    systemctl enable lightdm.service
+    echo "exec cinnamon-session" >> /etc/X11/xinit/xinitrc
+  elif [ $display_server == "wayland" ]; then
+    pacman -S wayland
+    systemctl enable lightdm.service
+    echo "exec cinnamon-session" >> /etc/X11/xinit/xinitrc
+ fi
+        desktop_selected=true
+    fi
+done
+
+if
+
+skip_desktop=true
+while [ $skip_desktop == true ]
+do
+    echo "Which desktop environment would you like to install? (gnome, kde, xfce, Cinnamon, type skip to skip this step)"
+    read desktop
+    if [ $desktop == "skip" ]; then
+        echo "Do you want to skip selecting a desktop environment? (y/n)"
+        read skip_desktop
+        if [ $skip_desktop == "n" ]; then
+            skip_desktop=false
+        fi
+    else
+
   # Ask user if they want to install Pamac package manager
 read -p "Do you want to install a Package Manager? (It works like an appstore) (y/n) " pm
 
@@ -131,56 +301,13 @@ if [ "$pm" == "y" ]; then
 else
     echo "A package manager has not been installed. Use 'pacman' command to search and install packages."
 fi
+
 else
   echo "Skipping desktop environment selection."
 fi
 else
   echo "Invalid selection."
   exit
-fi
-# Setting Desktop Enviroment 
-echo "Which desktop environment would you like to install? (gnome, kde, xfce, Cinnamon, type skip to skip this step)"
-read desktop
-if [ $desktop == "gnome" ]; then
-  pacman -S gnome
-  echo "Which display server would you like to use? (xorg, wayland)"
-  read display_server
-  if [ $display_server == "xorg" ]; then
-    pacman -S xorg-server
-    systemctl enable gdm.service
-  elif [ $display_server == "wayland" ]; then
-    pacman -S wayland
-    systemctl enable gdm.service
-  else
-    echo "Invalid selection."
-    exit
-  fi
-elif [ $desktop == "kde" ]; then
-  pacman -S kde
-  echo "Which display server would you like to use? (xorg, wayland)"
-  read display_server
-  if [ $display_server == "xorg" ]; then
-    pacman -S xorg-server
-    systemctl enable sddm.service
-  elif [ $display_server == "wayland" ]; then
-    pacman -S wayland
-    systemctl enable sddm.service
-  else
-    echo "Invalid selection."
-    exit
-  fi
-elif [ $desktop == "xfce" ]; then
-  pacman -S xfce
-  echo "Which display server would you like to use? (xorg, wayland)"
-  read display_server
-  if [ $display_server == "xorg" ]; then
-    pacman -S xorg-server
-    systemctl enable lightdm.service
-  elif [ $display_server == "wayland" ]; then
-    pacman -S wayland
-    systemctl enable lightdm.service
-  else
-    echo
 fi
 #Checking if user has an nvidia card
 nvidia_check=$(lspci | grep -i nvidia)
@@ -206,6 +333,17 @@ if [ -n "$nvidia_check" ]; then
 else
   echo "Nvidia card not detected."
 fi
+
+# Adding a user
+read -p "Enter the username you want to create: " username
+useradd -m -g wheel $username
+
+# disabling root user
+echo "do you want to disable root user? (y/n)"
+read disable_root
+if [ $disable_root == "y" ]; then
+  # Insert code for disabling root user here
+
 #Unmounting drives and rebooting
 umount -R /mnt
 echo "Unmounting all file systems."
