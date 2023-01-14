@@ -24,10 +24,10 @@ fi
 
 # Create boot partition
 if [ "$is_uefi" == true ]; then
-echo -e "n\np\n1\n\n+300M\nw" | fdisk ${drive}
+echo -e "n\np\n1\n\n+300M\nw\n" | fdisk ${drive}
     mkfs.fat -F 32 /dev/${drive}1
 else
-echo -e "n\np\n1\n\n+200M\nw" | fdisk ${drive}
+echo -e "n\np\n1\n\n+200M\nw\n" | fdisk ${drive}
     mkfs.ext4 /dev/${drive}1
 fi
 
