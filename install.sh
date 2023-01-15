@@ -331,6 +331,37 @@ else
   echo "Nvidia card not detected."
 fi
 
+# Set locale
+echo "Enter your desired locale (e.g. en_US.UTF-8): "
+read locale
+echo $locale >> /etc/locale.gen
+locale-gen
+echo "LANG=$locale" >> /etc/locale.conf
+
+# Show available main timezones
+timedatectl list-timezones | cut -f1 -d/
+
+# Set timezone
+echo "Select your desired main timezone from the list above: "
+read main_timezone
+
+# Check if the main timezone has any sub timezones
+sub_timezones=$(timedatectl list-timezones | grep ^$main_timezone | cut -f2 -d/)
+if [ -z "$sub_timezones" ]; then
+    # Main timezone has no sub timezones
+    timezone="$main_timezone"
+else
+    # Main timezone has sub timezones
+    echo "Select your desired sub timezone from the list below: "
+    echo "$sub_timezones"
+    read sub_timezone
+    timezone="$main_timezone/$sub_timezone"
+fi
+ln -sf /usr/share/zoneinfo/$timezone /etc/localtime
+hwclock --systohc
+
+
+
 # Adding a user
 read -p "Enter the username you want to create: " username
 useradd -m -g wheel $username
