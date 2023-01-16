@@ -4,7 +4,7 @@
 read -p "Are you on a laptop? (y/n) " is_laptop
 
 # Check if user is using UEFI
-if [ -d "/sys/firmware/efi/efivars" ]; then
+if [ -d "/sys/firmware/efi" ]; then
     is_uefi=true
 else
     is_uefi=false
@@ -16,10 +16,14 @@ lsblk
 # Ask user which drive to install Arch on
 read -p "Which drive do you want to install Arch on? (e.g. sda) " drive
 drive_path="/dev/$drive"
+if [ ! -b $drive_path ]; then
+   echo "$drive_path does not exist!"
+   exit 1
+fi
 # Ask user if they want to delete all partitions on the drive
 read -p "Do you want to delete all partitions on the drive? (y/n) " choice
 if [ "$choice" == "y" ]; then
-    sgdisk --zap-all $drive
+    sgdisk --zap-all $drive_path
 fi
 
 # Create a new GPT partition table
@@ -28,7 +32,7 @@ sgdisk --zap-all $drive_path
 # Create boot partition
 if [ "$is_uefi" == true ]; then
     sgdisk --new=1:0:+300M --typecode=1:ef00 $drive
-    mkfs.fat -F 32 ${drive}1
+    mkfs.fat -F 32 ${drive_path}1
 else
     sgdisk --new=1:0:+200M $drive
     mkfs.ext4 ${drive}1
@@ -37,15 +41,17 @@ fi
 # Create root partition
 sgdisk --new=2:0:+25G --typecode=2:8300 $drive_path
 mkfs.ext4 ${drive}3
-mount ${drive}3 /mnt
+mount ${drive_path}3 /mnt
+
 
 # Make sure the drive is at least 500GB
 hdd_size=$(lsblk -b | grep -w ${drive} | awk '{print $4}')
 if [ $hdd_size -gt 500000000000 ]; then
   echo "Hard drive is greater than 500GB."
   read -p "Enter desired swap partition size (in GB): " swap_size
+  swap_size_bytes=$((swap_size*1024*1024*1024))
   swap_size=$((swap_size*1.5))
-  sgdisk --new=3:0:+"$swap_size"G --typecode=3:8200 $drive_path
+  sgdisk --new=3:0:+"$swap_size_bytes"B --typecode=3:8200 $drive_path
   mkswap ${drive}2
   swapon ${drive}2
 else
@@ -77,7 +83,7 @@ if [ "$is_uefi" == "y" ]; then
     grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB
 else
     pacman -S grub
-    grub-install --target=i386-pc ${drive}
+    grub-install --target=i386-pc $drive_path
 fi
 grub-mkconfig -o /boot/grub/grub.cfg
 # Set root
@@ -93,7 +99,7 @@ read -p "Root user is successfully enabled"
 fi
 # Setting hostname
 read -p "Enter the hostname: " hostname
-echo $hostname > /etc/hostname
+echo $hostname > /mnt/etc/hostname
 # Setting Desktop Enviroment
 desktop_selected=false
 while [ $desktop_selected == false ]
@@ -288,7 +294,6 @@ do
         if [ $skip_desktop == "n" ]; then
             skip_desktop=false
         fi
-    done
   # Ask user if they want to install Pamac package manager
 read -p "Do you want to install a Package Manager? (It works like an appstore) (y/n) " pm
 
