@@ -41,6 +41,7 @@ fi
 # Create root partition
 sgdisk --new=2:0:+25G --typecode=2:8300 $drive_path
 mkfs.ext4 ${drive_path}3
+mkdir /mnt
 mount ${drive_path}3 /mnt
 
 # Make sure the drive is at least 500GB
@@ -63,7 +64,7 @@ echo "Hard drive is less than 500GB."
   sgdisk --new=3:0:+"$swap_size"G --typecode=3:8200 $drive_path
   mkswap ${drive}2
   swapon ${drive}2
-fi
+  
 # Install Pre-req's
 pacstrap /mnt base base-devel
 # Install base and base-devel packages
@@ -118,10 +119,12 @@ if [ $desktop == "gnome" ]; then
     pacman -S xorg-server
     systemctl enable gdm.service
     echo "exec gnome-session" >> /etc/X11/xinit/xinitrc
+    desktop_selected=true
   elif [ $display_server == "wayland" ]; then
     pacman -S wayland
     systemctl enable gdm.service
     echo "exec gnome-session" >> /etc/X11/xinit/xinitrc
+    desktop_selected=true
   else
     echo "Invalid selection."
     exit
@@ -136,10 +139,12 @@ elif [ $desktop == "kde" ]; then
     pacman -S xorg-server
     systemctl enable sddm.service
     echo "exec startplasma-x11" >> /etc/X11/xinit/xinitrc
+    desktop_selected=true
   elif [ $display_server == "wayland" ]; then
     pacman -S wayland
     systemctl enable sddm.service
     echo "exec startplasma" >> /etc/X11/xinit/xinitrc
+    desktop_selected=true
   else
     echo "Invalid selection."
     exit
@@ -153,10 +158,12 @@ elif [ $desktop == "xfce" ]; then
     pacman -S xorg-server
     systemctl enable lightdm.service
     echo "exec startxfce4" >> /etc/X11/xinit/xinitrc
+    desktop_selected=true
   elif [ $display_server == "wayland" ]; then
     pacman -S wayland
     systemctl enable lightdm.service
     echo "exec startxfce4" >> /etc/X11/xinit/xinitrc
+    desktop_selected=true
   else
     echo "Invalid selection."
     exit
@@ -170,10 +177,12 @@ elif [ $desktop == "xfce" ]; then
     pacman -S xorg-server
     systemctl enable lightdm.service
     echo "exec startxfce4" >> /etc/X11/xinit/xinitrc
+    desktop_selected=true
   elif [ $display_server == "wayland" ]; then
     pacman -S wayland
     systemctl enable lightdm.service
     echo "exec startxfce4" >> /etc/X11/xinit/xinitrc
+    desktop_selected=true
   else
     echo "Invalid selection."
     exit
@@ -187,13 +196,13 @@ elif [ $desktop == "Cinnamon" ]; then
     pacman -S xorg-server
     systemctl enable lightdm.service
     echo "exec cinnamon-session" >> /etc/X11/xinit/xinitrc
+    desktop_selected=true
   elif [ $display_server == "wayland" ]; then
     pacman -S wayland
     systemctl enable lightdm.service
     echo "exec cinnamon-session" >> /etc/X11/xinit/xinitrc
+    desktop_selected=true
  fi
-            desktop_selected=true
-        fi
     else
 # gnome desktop environment
 if [ $desktop == "gnome" ]; then
@@ -204,10 +213,12 @@ if [ $desktop == "gnome" ]; then
     pacman -S xorg-server
     systemctl enable gdm.service
     echo "exec gnome-session" >> /etc/X11/xinit/xinitrc
+    desktop_selected=true
   elif [ $display_server == "wayland" ]; then
     pacman -S wayland
     systemctl enable gdm.service
     echo "exec gnome-session" >> /etc/X11/xinit/xinitrc
+    desktop_selected=true
   else
     echo "Invalid selection."
     exit
@@ -222,10 +233,12 @@ elif [ $desktop == "kde" ]; then
     pacman -S xorg-server
     systemctl enable sddm.service
     echo "exec startplasma-x11" >> /etc/X11/xinit/xinitrc
+    desktop_selected=true
   elif [ $display_server == "wayland" ]; then
     pacman -S wayland
     systemctl enable sddm.service
     echo "exec startplasma" >> /etc/X11/xinit/xinitrc
+    desktop_selected=true
   else
     echo "Invalid selection."
     exit
@@ -239,10 +252,12 @@ elif [ $desktop == "xfce" ]; then
     pacman -S xorg-server
     systemctl enable lightdm.service
     echo "exec startxfce4" >> /etc/X11/xinit/xinitrc
+    desktop_selected=true
   elif [ $display_server == "wayland" ]; then
     pacman -S wayland
     systemctl enable lightdm.service
     echo "exec startxfce4" >> /etc/X11/xinit/xinitrc
+    desktop_selected=true
   else
     echo "Invalid selection."
     exit
@@ -256,10 +271,12 @@ elif [ $desktop == "xfce" ]; then
     pacman -S xorg-server
     systemctl enable lightdm.service
     echo "exec startxfce4" >> /etc/X11/xinit/xinitrc
+    desktop_selected=true
   elif [ $display_server == "wayland" ]; then
     pacman -S wayland
     systemctl enable lightdm.service
     echo "exec startxfce4" >> /etc/X11/xinit/xinitrc
+    desktop_selected=true
   else
     echo "Invalid selection."
     exit
@@ -273,13 +290,14 @@ elif [ $desktop == "Cinnamon" ]; then
     pacman -S xorg-server
     systemctl enable lightdm.service
     echo "exec cinnamon-session" >> /etc/X11/xinit/xinitrc
+    desktop_selected=true
   elif [ $display_server == "wayland" ]; then
     pacman -S wayland
     systemctl enable lightdm.service
     echo "exec cinnamon-session" >> /etc/X11/xinit/xinitrc
+    desktop_selected=true
  fi
-        desktop_selected=true
-    fi
+        
     
 if
 skip_desktop=true
@@ -293,7 +311,15 @@ do
         if [ $skip_desktop == "n" ]; then
             skip_desktop=false
         fi
-  # Ask user if they want to install Pamac package manager
+else
+  echo "Skipping desktop environment selection."
+fi
+else
+  echo "Invalid selection."
+  exit
+fi
+
+# Ask user if they want to install Pamac package manager
 read -p "Do you want to install a Package Manager? (It works like an appstore) (y/n) " pm
 
 if [ "$pm" == "y" ]; then
@@ -303,13 +329,6 @@ else
     echo "A package manager has not been installed. Use 'pacman' command to search and install packages."
 fi
 
-else
-  echo "Skipping desktop environment selection."
-fi
-else
-  echo "Invalid selection."
-  exit
-fi
 #Checking if user has an nvidia card
 nvidia_check=$(lspci | grep -i nvidia)
 if [ -n "$nvidia_check" ]; then
