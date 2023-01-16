@@ -31,18 +31,17 @@ sgdisk --zap-all $drive_path
 
 # Create boot partition
 if [ "$is_uefi" == true ]; then
-    sgdisk --new=1:0:+300M --typecode=1:ef00 $drive
+    sgdisk --new=1:0:+300M --typecode=1:ef00 $drive_path
     mkfs.fat -F 32 ${drive_path}1
 else
-    sgdisk --new=1:0:+200M $drive
-    mkfs.ext4 ${drive}1
+    sgdisk --new=1:0:+200M $drive_path
+    mkfs.ext4 ${drive_path}1
 fi
 
 # Create root partition
 sgdisk --new=2:0:+25G --typecode=2:8300 $drive_path
-mkfs.ext4 ${drive}3
+mkfs.ext4 ${drive_path}3
 mount ${drive_path}3 /mnt
-
 
 # Make sure the drive is at least 500GB
 hdd_size=$(lsblk -b | grep -w ${drive} | awk '{print $4}')
