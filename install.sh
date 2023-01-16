@@ -53,7 +53,7 @@ if [ $hdd_size -gt 500000000000 ]; then
   echo "Hard drive is greater than 500GB."
   read -p "Enter desired swap partition size (in GB): " swap_size
   swap_size_bytes=$((swap_size*1024*1024*1024))
-  sgdisk --new=2:0:+"$swap_size_bytes"B --typecode=3:8200 $drive_path
+  sgdisk --new=2:0:+"$swap_size_bytes"B --typecode=3:8300 $drive_path
   mkswap ${drive_path}2
   swapon ${drive_path}2
 else
@@ -64,7 +64,7 @@ else
     exit
   fi
   swap_size=$((swap_size*1024*1024*1024))
-  sgdisk --new=2:0:+"$swap_size"B --typecode=3:8200 $drive_path
+  sgdisk --new=2:0:+"$swap_size"B --typecode=3:8300 $drive_path
   mkswap ${drive_path}2
   swapon ${drive_path}2
 fi
