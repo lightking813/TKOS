@@ -53,13 +53,18 @@ else
     mount ${drive_path}1 /mnt/boot
 fi
 
+# Create root partition
+sgdisk --new=3:0:+25G --typecode=3:8300 $drive_path
+mkfs.ext4 ${drive_path}3
+mount ${drive_path}3 /mnt
+
 # Make sure the drive is at least 500GB
 hdd_size=$(lsblk -b | grep -w ${drive} | awk '{print $4}')
 if [ $hdd_size -gt 500000000000 ]; then
   echo "Hard drive is greater than 500GB."
-  read -p "Enter desired swap partition size (in GB): " swap_size
+  read -p "Enter desired swap partition size (in GB): " swap_size 
   swap_size_bytes=$((swap_size*1024*1024*1024))
-  sgdisk --new=2:0:+"$swap_size_bytes"B --typecode=2:8300 $drive_path
+  sgdisk --new=2:0:+"$swap_size_bytes"B --typecode=2:8300 $drive_path --start_sector = (end_sector_of_last_partition + 1)
   if ! [[ $swap_size =~ ^[0-9]+$ ]]; then
     echo "Invalid swap size. Please enter a valid number."
     exit 1
@@ -78,15 +83,10 @@ else
     exit 1
 fi
   swap_size=$((swap_size*1024*1024*1024))
-  sgdisk --new=2:0:+"$swap_size"B --typecode=2:8300 $drive_path
+  sgdisk --new=2:0:+"$swap_size"B --typecode=2:8300 $drive_path --start_sector = (end_sector_of_last_partition + 1)
   mkswap ${drive_path}2
   swapon ${drive_path}2
 fi
-
-# Create root partition
-sgdisk --new=3:0:+25G --typecode=3:8300 $drive_path
-mkfs.ext4 ${drive_path}3
-mount ${drive_path}3 /mnt
 
 # Create Home Partition
 sgdisk --new=4:0:+0 --typecode=4:8300 $drive_path
