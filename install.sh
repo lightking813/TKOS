@@ -29,7 +29,6 @@ if [ "$choice" == "n" ]; then
     exit 1
 else
 
-fi
 # Create a new MBR partition table
 sfdisk --zero $drive_path
 
