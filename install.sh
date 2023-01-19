@@ -22,8 +22,7 @@ read -p "Do you want to format the drive? (y/n) " choice
 if [ "$choice" == "n" ]; then
     echo "Exiting the script."
     exit 1
-    else
-    if [ "$choice" == "y" ]; then
+    elif [ "$choice" == "y" ]; then
     wipefs -a $drive_path
 fi
 
@@ -81,10 +80,12 @@ mkfs.ext4 "$drive_path"3
 echo "Creating home partition..."
 echo "," | sfdisk $drive_path $drive_path -N 4
 mkfs.ext4 "$drive_path"4
-#Make drives
+
+# Make drives
+
 mkdir -p /mnt/{boot,swap,home}
 mount "$drive_path"1 /mnt/boot
-swapon "$drive_path"2"
+swapon "$drive_path"2
 mount "$drive_path"3 /mnt
 mount "$drive_path"4 /mnt/home
 
@@ -153,12 +154,12 @@ echo $hostname > /mnt/etc/hostname
 desktop_selected=false
 while [ $desktop_selected == false ]
 do
-    echo "Which desktop environment would you like to install? (gnome, kde, xfce, Cinnamon, type 'skip' to skip this step)""
+echo "Which desktop environment would you like to install? (gnome kde xfce Cinnamon or type skip to skip this step.)"
     read desktop
     if [ $desktop == "skip" ]; then
         echo "Desktop environment selection skipped."
         desktop_selected=true
-    # gnome desktop environment
+ # gnome desktop environment
     elif [ $desktop == "gnome" ]; then
         pacman -S gnome
         echo "Which display server would you like to use? (xorg, wayland)"
@@ -239,7 +240,7 @@ if
 skip_desktop=false
 while [ $skip_desktop == false ]
 do
-    echo "Which desktop environment would you like to install? (gnome, kde, xfce, Cinnamon, type 'skip' to skip this step)""
+    echo "Which desktop environment would you like to install? (gnome, kde, xfce, Cinnamon, type 'skip' to skip this step)"
     read desktop
     if [ $desktop == "skip" ]; then
         echo "Do you want to skip selecting a desktop environment? (y/n)"
