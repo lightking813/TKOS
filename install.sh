@@ -78,17 +78,18 @@ echo "size=25G, type=83" | sfdisk $drive_path -N 3
 mkfs.ext4 "$drive_path"3
 # Create home partition
 echo "Creating home partition..."
-echo "," | sfdisk $drive_path $drive_path -N 4
+echo "," | sfdisk $drive_path -N 4
 mkfs.ext4 "$drive_path"4
 
 # Make drives
-
 mkdir -p /mnt/{boot,swap,root,home}
 mount "$drive_path"1 /mnt/boot
 mkswap "$drive_path"2
 swapon "$drive_path"2
+mkdir /mnt/root
 mount "$drive_path"3 /mnt/root
 mount "$drive_path"4 /mnt/home
+
 
 # Install Pre-req's
 if ! mount | grep -q '/mnt/boot'; then
