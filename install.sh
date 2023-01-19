@@ -13,6 +13,7 @@ lsblk
 if ! ping -c 1 google.com > /dev/null; then
     echo "NetworkManager is not properly configured or connected to the internet. Please check your internet connection and try again."
     exit 1
+fi
 # Ask user which drive to install Arch on
 read -p "Which drive do you want to install Arch on? (e.g. sda) " drive
 drive_path="/dev/$drive"
@@ -20,117 +21,83 @@ if [ ! -b $drive_path ]; then
    echo "$drive_path does not exist!"
    exit 1
 fi
-# Ask user if they want to delete all partitions on the drive
-read -p "Do you want to delete all partitions on the drive? (In most cases select type 'y') (y/n) " choice
-if [ "$choice" == "y" ]; then
-    sgdisk --zap-all $drive_path
-    partprobe $drive_path
-    else
-    if ! lsblk -o NAME,TYPE,SIZE,MOUNTPOINT ${drive} | grep -E 'part|mounted' ; then
-    echo "The selected drive does not contain any important data."
+
+#Ask user if they want to format the drive
+read -p "Do you want to format the drive? (y/n) " choice
+if [ "$choice" == "n" ]; then
+    echo "Exiting the script."
+    exit 1
 else
-    echo "The selected drive contains important data. Please make sure you have backed up any important data before proceeding."
-    exit 1
-fi
-
-if ! lsblk -o NAME,FSTYPE ${drive} | grep -q GPT; then
-    echo "The selected drive is not formatted. Please format drive before proceeding."
-    exit 1
-fi
 
 fi
-
-
-# Create a new GPT partition table
-mkdir /mnt
-mkdir /mnt/boot
-mkdir /mnt/home
+# Create a new MBR partition table
+sfdisk --zero $drive_path
 
 # Create boot partition
 if [ "$is_uefi" == true ]; then
-    sgdisk --new=1:0:+300M --typecode=1:ef00 $drive_path
-    mkfs.fat -F 32 ${drive_path}1
-    mount ${drive_path}1 /mnt/boot
+  sfdisk --new-partition=1,0:+300M,83 $drive_path
 else
-    sgdisk --new=1:0:+200M $drive_path
-    mkfs.ext4 ${drive_path}1
-    mount ${drive_path}1 /mnt/boot
+  sfdisk --new-partition=1,0:+200M,83 $drive_path
 fi
+mkfs.ext4 "$drive_path"1
+
 
 # Create root partition
-sgdisk --new=3:0:+25G --typecode=3:8300 $drive_path
-mkfs.ext4 ${drive_path}3
-mount ${drive_path}3 /mnt
+sfdisk --new-partition=3,0:+25G,83 $drive_path
+mkfs.ext4 "$drive_path"3
 
-# Make sure the drive is at least 500GB
-hdd_size=$(lsblk -b | grep -w ${drive} | awk '{print $4}')
-if [ $hdd_size -gt 500000000000 ]; then
-  echo "Hard drive is greater than 500GB."
-  read -p "Enter desired swap partition size (in GB): " swap_size 
-  swap_size_bytes=$((swap_size*1024*1024*1024))
-  last_partition_end_sector=$(sgdisk --print $drive_path | grep '^\s*[0-9]' | tail -1 | awk '{print $3}')
-  start_sector=$(($last_partition_end_sector + 1))
-  sgdisk --new=2:0:+"$swap_size_bytes"B --typecode=2:8300 --first=$start_sector $drive_path
-
-  if ! [[ $swap_size =~ ^[0-9]+$ ]]; then
+# Create swap partition
+read -p "Enter desired swap partition size (in GB, less than 8GB): " swap_size
+if ! [[ $swap_size =~ ^[0-9]+$ ]]; then
     echo "Invalid swap size. Please enter a valid number."
     exit 1
-  fi
-  mkswap ${drive_path}2
-  swapon ${drive_path}2
-else
-  echo "Hard drive is less than 500GB."
-  read -p "Enter desired swap partition size (in GB, less than 8GB): " swap_size
-  if [ $swap_size -gt 8 ]; then
+fi
+if [ $swap_size -gt 8 ]; then
     echo "Invalid swap size. Swap partition must be less than 8GB."
     exit 1
-  fi
-  if ! [[ $swap_size =~ ^[0-9]+$ ]]; then
-    echo "Invalid swap size. Please enter a valid number."
-    exit 1
-  fi
-  swap_size_bytes=$((swap_size*1024*1024*1024))
-  last_partition_end_sector=$(sgdisk --print $drive_path | grep '^\s*[0-9]' | tail -1 | awk '{print $3}')
-  start_sector=$(($last_partition_end_sector + 1))
-  sgdisk --new=2:0:+"$swap_size_bytes"B --typecode=2:8300 --first=$start_sector $drive_path
-  mkswap ${drive_path}2
-  swapon ${drive_path}2
 fi
+swap_size_bytes=$((swap_size*1024*1024*1024))
+sfdisk --new-partition=2,0:+"$swap_size_bytes"B,83 $drive_path
+mkswap "$drive_path"2
+swapon "$drive_path"2
 
-# Create Home Partition
-sgdisk --new=4:0:+0 --typecode=4:8300 $drive_path
-mkfs.ext4 ${drive_path}4
-mount ${drive_path}4 /mnt/home
+# Create home partition
+sfdisk --new-partition=4,0:0,83 $drive_path
+mkfs.ext4 "$drive_path"4
 
-if ! df /boot | awk '{print $1}' | grep -q ${drive}; then
-    echo "The selected drive is not the boot drive. Please select the correct drive before proceeding."
-    exit 1
-fi
+mkdir /mnt/{boot,swap,home}
+mount "$drive_path"1 /mnt/boot
+mount "$drive_path"3 /mnt
+mount "$drive_path"2 /mnt/swap
+mount "$drive_path"4 /mnt/home
+
 # Install Pre-req's
 if ! mount | grep -q '/mnt/boot'; then
     echo "Boot partition is not mounted. Please mount it before proceeding."
     exit 1
 fi
 
-root_space=$(df -h $root_partition | awk '{print $4}')
+root_space=$(df -h /mnt/ | awk '{print $4}')
 if [[ $root_space < "25G" ]]; then
     echo "The root partition does not have enough space to install Arch Linux. Please make sure the partition has at least 25GB of free space."
     exit 1
 fi
 
-if ! lsblk -o NAME,TYPE,SIZE,MOUNTPOINT ${drive} | grep -q "boot" && ! lsblk -o NAME,TYPE,SIZE,MOUNTPOINT ${drive} | grep -q "swap" && ! lsblk -o NAME,TYPE,SIZE,MOUNTPOINT ${drive} | grep -q "root" && ! lsblk -o NAME,TYPE,SIZE,MOUNTPOINT ${drive} | grep -q "home"; then
+if ! lsblk -o NAME,TYPE,SIZE,MOUNTPOINT ${drive} | grep -q "boot" && ! lsblk -o NAME,TYPE,SIZE,MOUNTPOINT ${drive} | grep -q "swap" && ! lsblk -o NAME,TYPE,SIZE,MOUNTPOINT ${drive} | grep -q "/mnt" && ! lsblk -o NAME,TYPE,SIZE,MOUNTPOINT ${drive} | grep -q "home"; then
     echo "The selected drive does not have the desired partition layout. Please make sure the drive has a boot partition, a swap partition, a root partition and a home partition"
     exit 1
 fi
 
+
+
 pacstrap /mnt base base-devel
 # Install base and base-devel packages
-pacman -S neofetch nano
-# Generate fstab
-genfstab /mnt >> /mnt/etc/fstab
-genfstab -U /mnt >> /mnt/etc/fstab
 # Arch-chroot
 arch-chroot /mnt
+pacman -S neofetch nano
+# Generate fstab
+genfstab -U /mnt >> /mnt/etc/fstab
+
 # Install NetworkManager
 pacman -S networkmanager
 systemctl enable NetworkManager
