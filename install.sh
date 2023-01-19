@@ -83,11 +83,11 @@ mkfs.ext4 "$drive_path"4
 
 # Make drives
 
-mkdir -p /mnt/{boot,swap,home}
+mkdir -p /mnt/{boot,swap,root,home}
 mount "$drive_path"1 /mnt/boot
 mkswap "$drive_path"2
 swapon "$drive_path"2
-mount "$drive_path"3 /mnt
+mount "$drive_path"3 /mnt/root
 mount "$drive_path"4 /mnt/home
 
 # Install Pre-req's
