@@ -76,15 +76,15 @@ fi
 # Create /mnt partition
 echo "Creating root partition..."
 echo "size=25G, type=83" | sfdisk $drive_path
-
+mkfs.ext4 "$drive_path"3
 # Create home partition
 echo "Creating home partition..."
 echo "," | sfdisk $drive_path
-
+mkfs.ext4 "$drive_path"4
 #Make drives
 mkdir /mnt/{boot,home}
 mount "$drive_path"1 /mnt/boot
-swapon "$drive_path"2 /swap
+swapon "$drive_path"2
 mount "$drive_path"3 /mnt
 mount "$drive_path"4 /mnt/home
 
