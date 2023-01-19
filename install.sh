@@ -64,18 +64,12 @@ swap_size_bytes=$(echo "$swap_size * 1.5 * 1024 * 1024 * 1024" | bc)
 echo "Creating swap partition..."
 echo "size=$swap_size_bytes, type=82" | sfdisk $drive_path -N 2
 mkswap "$drive_path"2
-# Check total disk size
-total_size=$(sfdisk -s $drive_path)
-if (( total_size < 500000000000 )); then
-    max_swap=8
-else
-    max_swap=16
-fi
 
 # Create /mnt partition
 echo "Creating root partition..."
 echo "size=25G, type=83" | sfdisk $drive_path -N 3
 mkfs.ext4 "$drive_path"3
+
 # Create home partition
 echo "Creating home partition..."
 echo "," | sfdisk $drive_path -N 4
@@ -84,9 +78,7 @@ mkfs.ext4 "$drive_path"4
 # Make drives
 mkdir -p /mnt/{boot,swap,root,home}
 mount "$drive_path"1 /mnt/boot
-mkswap "$drive_path"2
 swapon "$drive_path"2
-mkdir /mnt/root
 mount "$drive_path"3 /mnt/root
 mount "$drive_path"4 /mnt/home
 
