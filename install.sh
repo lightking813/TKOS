@@ -58,7 +58,7 @@ if (( swap_size > max_swap )); then
     echo "Invalid swap size. Swap partition must be less than $max_swap GB."
     exit 1
 fi
-swap_size_bytes=$((swap_size*1.5*1024*1024*1024))
+swap_size_bytes=$(echo "$swap_size * 1.5 * 1024 * 1024 * 1024" | bc)
 
 # Create swap partition
 echo "Creating swap partition..."
