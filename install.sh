@@ -3,17 +3,12 @@
 # Check if user is using UEFI
 if [ -d "/sys/firmware/efi" ]; then
     is_uefi=true
+    boot_size=300M
 else
     is_uefi=false
+    boot_size=200M
 fi
 
-# List available drives
-lsblk
-# Check if NetworkManager is properly configured and connected to the internet
-if ! ping -c 1 google.com > /dev/null; then
-    echo "NetworkManager is not properly configured or connected to the internet. Please check your internet connection and try again."
-    exit 1
-fi
 # Ask user which drive to install Arch on
 read -p "Which drive do you want to install Arch on? (e.g. sda) " drive
 drive_path="/dev/$drive"
@@ -22,48 +17,56 @@ if [ ! -b $drive_path ]; then
    exit 1
 fi
 
-#Ask user if they want to format the drive
-read -p "Do you want to format the drive? (y/n) " choice
-if [ "$choice" == "n" ]; then
-    echo "Exiting the script."
-    exit 1
+# Check total disk size
+total_size=$(sfdisk -s $drive_path)
+if (( total_size < 400000000000 )); then
+    max_swap=8
 else
-
-# Create a new MBR partition table
-sfdisk --zero $drive_path
-
-# Create boot partition
-if [ "$is_uefi" == true ]; then
-  sfdisk --new-partition=1,0:+300M,83 $drive_path
-else
-  sfdisk --new-partition=1,0:+200M,83 $drive_path
+    max_swap=16
 fi
-mkfs.ext4 "$drive_path"1
 
-
-# Create root partition
-sfdisk --new-partition=3,0:+25G,83 $drive_path
-mkfs.ext4 "$drive_path"3
-
-# Create swap partition
-read -p "Enter desired swap partition size (in GB, less than 8GB): " swap_size
+# Ask user for desired swap size
+read -p "Enter desired swap partition size (in GB, less than $max_swap GB): " swap_size
 if ! [[ $swap_size =~ ^[0-9]+$ ]]; then
     echo "Invalid swap size. Please enter a valid number."
     exit 1
 fi
-if [ $swap_size -gt 8 ]; then
-    echo "Invalid swap size. Swap partition must be less than 8GB."
+if (( swap_size > max_swap )); then
+    echo "Invalid swap size. Swap partition must be less than $max_swap GB."
     exit 1
 fi
 swap_size_bytes=$((swap_size*1024*1024*1024))
-sfdisk --new-partition=2,0:+"$swap_size_bytes"B,83 $drive_path
+
+# Ask user if they want to format the drive
+read -p "Do you want to format the drive? (y/n) " choice
+if [ "$choice" == "n" ]; then
+    echo "Exiting the script."
+    exit 1
+fi
+
+# Create a new MBR partition table
+echo "Creating new partition table..."
+echo "," | sfdisk $drive_path
+
+# Create boot partition
+echo "Creating boot partition..."
+echo "size=$boot_size, type=83" | sfdisk $drive_path
+
+# Create swap partition
+echo "Creating swap partition..."
+echo "size=$swap_size_bytes, type=82" | sfdisk $drive_path
 mkswap "$drive_path"2
 swapon "$drive_path"2
 
-# Create home partition
-sfdisk --new-partition=4,0:0,83 $drive_path
-mkfs.ext4 "$drive_path"4
+# Create /mnt partition
+echo "Creating root partition..."
+echo "," | sfdisk $drive_path
 
+# Create home partition
+echo "Creating home partition..."
+echo "," | sfdisk $drive_path
+
+#Make drives
 mkdir /mnt/{boot,swap,home}
 mount "$drive_path"1 /mnt/boot
 mount "$drive_path"3 /mnt
