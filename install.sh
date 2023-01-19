@@ -8,8 +8,8 @@ else
     is_uefi=false
     boot_size=200M
 fi
-
 # Ask user which drive to install Arch on
+lsblk
 read -p "Which drive do you want to install Arch on? (e.g. sda) " drive
 drive_path="/dev/$drive"
 if [ ! -b $drive_path ]; then
@@ -24,7 +24,7 @@ if [ "$choice" == "n" ]; then
     exit 1
     else
     if [ "$choice" == "y" ]; then
-    mkfs.ext4 $drive_path
+    wipefs -a $drive_path
 fi
 
 # Create a new MBR partition table
@@ -100,8 +100,9 @@ if [[ $root_space < "25G" ]]; then
     exit 1
 fi
 
-if ! lsblk -o NAME,TYPE,SIZE,MOUNTPOINT ${drive} | grep -q "boot" && ! lsblk -o NAME,TYPE,SIZE,MOUNTPOINT ${drive} | grep -q "swap" && ! lsblk -o NAME,TYPE,SIZE,MOUNTPOINT ${drive} | grep -q "/mnt" && ! lsblk -o NAME,TYPE,SIZE,MOUNTPOINT ${drive} | grep -q "home"; then
-    echo "The selected drive does not have the desired partition layout. Please make sure the drive has a boot partition, a swap partition, a root partition and a home partition"
+lsblk | grep -q "/dev/$drive"
+if [ $? -ne 0 ]; then
+    echo "Partitions have not been created. Exiting script."
     exit 1
 fi
 
