@@ -17,9 +17,32 @@ if [ ! -b $drive_path ]; then
    exit 1
 fi
 
+# Ask user if they want to format the drive
+read -p "Do you want to format the drive? (y/n) " choice
+if [ "$choice" == "n" ]; then
+    echo "Exiting the script."
+    exit 1
+    else
+    if [ "$choice" == "y" ]; then
+    mkfs.ext4 $drive_path
+fi
+
+# Create a new MBR partition table
+echo "Creating new partition table..."
+echo "," | sfdisk $drive_path
+
+# Create boot partition
+echo "Creating boot partition..."
+if [ "$is_uefi" == true ]; then
+    echo "size=$boot_size, type=ef" | sfdisk $drive_path
+    mkfs.fat -F32 "$drive_path"1
+else
+    echo "size=$boot_size, type=83" | sfdisk $drive_path
+fi
+
 # Check total disk size
 total_size=$(sfdisk -s $drive_path)
-if (( total_size < 400000000000 )); then
+if (( total_size < 500000000000 )); then
     max_swap=8
 else
     max_swap=16
@@ -35,28 +58,20 @@ if (( swap_size > max_swap )); then
     echo "Invalid swap size. Swap partition must be less than $max_swap GB."
     exit 1
 fi
-swap_size_bytes=$((swap_size*1024*1024*1024))
-
-# Ask user if they want to format the drive
-read -p "Do you want to format the drive? (y/n) " choice
-if [ "$choice" == "n" ]; then
-    echo "Exiting the script."
-    exit 1
-fi
-
-# Create a new MBR partition table
-echo "Creating new partition table..."
-echo "," | sfdisk $drive_path
-
-# Create boot partition
-echo "Creating boot partition..."
-echo "size=$boot_size, type=83" | sfdisk $drive_path
+swap_size_bytes=$((swap_size*1.5*1024*1024*1024))
 
 # Create swap partition
 echo "Creating swap partition..."
 echo "size=$swap_size_bytes, type=82" | sfdisk $drive_path
 mkswap "$drive_path"2
 swapon "$drive_path"2
+# Check total disk size
+total_size=$(sfdisk -s $drive_path)
+if (( total_size < 500000000000 )); then
+    max_swap=8
+else
+    max_swap=16
+fi
 
 # Create /mnt partition
 echo "Creating root partition..."
