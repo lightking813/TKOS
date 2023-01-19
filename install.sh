@@ -18,13 +18,26 @@ if [ ! -b $drive_path ]; then
    exit 1
 fi
 # Ask user if they want to delete all partitions on the drive
-read -p "Do you want to delete all partitions on the drive? (y/n) " choice
+read -p "Do you want to delete all partitions on the drive? (In most cases select type 'y') (y/n) " choice
 if [ "$choice" == "y" ]; then
     sgdisk --zap-all $drive_path
+    else
+    if ! lsblk -o NAME,TYPE,SIZE,MOUNTPOINT ${drive} | grep -E 'part|mounted' ; then
+    echo "The selected drive does not contain any important data."
+else
+    echo "The selected drive contains important data. Please make sure you have backed up any important data before proceeding."
+    exit 1
 fi
 
+if ! lsblk -o NAME,FSTYPE ${drive} | grep -q GPT; then
+    echo "The selected drive is not formatted. Please format drive before proceeding."
+    exit 1
+fi
+
+fi
+
+
 # Create a new GPT partition table
-sgdisk --zap-all $drive_path
 mkdir /mnt
 mkdir /mnt/boot
 mkdir /mnt/home
@@ -47,6 +60,10 @@ if [ $hdd_size -gt 500000000000 ]; then
   read -p "Enter desired swap partition size (in GB): " swap_size
   swap_size_bytes=$((swap_size*1024*1024*1024))
   sgdisk --new=2:0:+"$swap_size_bytes"B --typecode=2:8300 $drive_path
+  if ! [[ $swap_size =~ ^[0-9]+$ ]]; then
+    echo "Invalid swap size. Please enter a valid number."
+    exit 1
+fi
   mkswap ${drive_path}2
   swapon ${drive_path}2
 else
@@ -54,8 +71,12 @@ else
   read -p "Enter desired swap partition size (in GB, less than 8GB): " swap_size
   if [ $swap_size -gt 8 ]; then
     echo "Invalid swap size. Swap partition must be less than 8GB."
-    exit
+    exit 1
   fi
+  if ! [[ $swap_size =~ ^[0-9]+$ ]]; then
+    echo "Invalid swap size. Please enter a valid number."
+    exit 1
+fi
   swap_size=$((swap_size*1024*1024*1024))
   sgdisk --new=2:0:+"$swap_size"B --typecode=2:8300 $drive_path
   mkswap ${drive_path}2
@@ -72,7 +93,27 @@ sgdisk --new=4:0:+0 --typecode=4:8300 $drive_path
 mkfs.ext4 ${drive_path}4
 mount ${drive_path}4 /mnt/home
 
+if ! df /boot | awk '{print $1}' | grep -q ${drive}; then
+    echo "The selected drive is not the boot drive. Please select the correct drive before proceeding."
+    exit 1
+fi
 # Install Pre-req's
+if ! mount | grep -q '/mnt/boot'; then
+    echo "Boot partition is not mounted. Please mount it before proceeding."
+    exit 1
+fi
+
+root_space=$(df -h $root_partition | awk '{print $4}')
+if [[ $root_space < "25G" ]]; then
+    echo "The root partition does not have enough space to install Arch Linux. Please make sure the partition has at least 25GB of free space."
+    exit 1
+fi
+
+if ! lsblk -o NAME,TYPE,SIZE,MOUNTPOINT ${drive} | grep -q "boot" && ! lsblk -o NAME,TYPE,SIZE,MOUNTPOINT ${drive} | grep -q "swap" && ! lsblk -o NAME,TYPE,SIZE,MOUNTPOINT ${drive} | grep -q "root" && ! lsblk -o NAME,TYPE,SIZE,MOUNTPOINT ${drive} | grep -q "home"; then
+    echo "The selected drive does not have the desired partition layout. Please make sure the drive has a boot partition, a swap partition, a root partition and a home partition"
+    exit 1
+fi
+
 pacstrap /mnt base base-devel
 # Install base and base-devel packages
 pacman -S neofetch nano
@@ -88,9 +129,11 @@ systemctl enable NetworkManager
 if [ "$is_uefi" == "y" ]; then
     pacman -S grub efibootmgr
     grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB
+    if [ $? -ne 0 ]; then echo "grub-install failed"; fi
 else
     pacman -S grub
     grub-install --target=i386-pc $drive_path
+    if [ $? -ne 0 ]; then echo "grub-install failed"; fi
 fi
 grub-mkconfig -o /boot/grub/grub.cfg
 # Set root
