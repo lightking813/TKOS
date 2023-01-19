@@ -9,7 +9,10 @@ fi
 
 # List available drives
 lsblk
-
+# Check if NetworkManager is properly configured and connected to the internet
+if ! ping -c 1 google.com > /dev/null; then
+    echo "NetworkManager is not properly configured or connected to the internet. Please check your internet connection and try again."
+    exit 1
 # Ask user which drive to install Arch on
 read -p "Which drive do you want to install Arch on? (e.g. sda) " drive
 drive_path="/dev/$drive"
@@ -21,6 +24,7 @@ fi
 read -p "Do you want to delete all partitions on the drive? (In most cases select type 'y') (y/n) " choice
 if [ "$choice" == "y" ]; then
     sgdisk --zap-all $drive_path
+    partprobe $drive_path
     else
     if ! lsblk -o NAME,TYPE,SIZE,MOUNTPOINT ${drive} | grep -E 'part|mounted' ; then
     echo "The selected drive does not contain any important data."
@@ -64,11 +68,14 @@ if [ $hdd_size -gt 500000000000 ]; then
   echo "Hard drive is greater than 500GB."
   read -p "Enter desired swap partition size (in GB): " swap_size 
   swap_size_bytes=$((swap_size*1024*1024*1024))
-  sgdisk --new=2:0:+"$swap_size_bytes"B --typecode=2:8300 $drive_path --start_sector = (end_sector_of_last_partition + 1)
+  last_partition_end_sector=$(sgdisk --print $drive_path | grep '^\s*[0-9]' | tail -1 | awk '{print $3}')
+  start_sector=$(($last_partition_end_sector + 1))
+  sgdisk --new=2:0:+"$swap_size_bytes"B --typecode=2:8300 --first=$start_sector $drive_path
+
   if ! [[ $swap_size =~ ^[0-9]+$ ]]; then
     echo "Invalid swap size. Please enter a valid number."
     exit 1
-fi
+  fi
   mkswap ${drive_path}2
   swapon ${drive_path}2
 else
@@ -81,9 +88,11 @@ else
   if ! [[ $swap_size =~ ^[0-9]+$ ]]; then
     echo "Invalid swap size. Please enter a valid number."
     exit 1
-fi
-  swap_size=$((swap_size*1024*1024*1024))
-  sgdisk --new=2:0:+"$swap_size"B --typecode=2:8300 $drive_path --start_sector = (end_sector_of_last_partition + 1)
+  fi
+  swap_size_bytes=$((swap_size*1024*1024*1024))
+  last_partition_end_sector=$(sgdisk --print $drive_path | grep '^\s*[0-9]' | tail -1 | awk '{print $3}')
+  start_sector=$(($last_partition_end_sector + 1))
+  sgdisk --new=2:0:+"$swap_size_bytes"B --typecode=2:8300 --first=$start_sector $drive_path
   mkswap ${drive_path}2
   swapon ${drive_path}2
 fi
@@ -125,6 +134,7 @@ arch-chroot /mnt
 # Install NetworkManager
 pacman -S networkmanager
 systemctl enable NetworkManager
+fi
 # Install GRUB
 if [ "$is_uefi" == "y" ]; then
     pacman -S grub efibootmgr
