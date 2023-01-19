@@ -34,10 +34,10 @@ echo "," | sfdisk $drive_path
 # Create boot partition
 echo "Creating boot partition..."
 if [ "$is_uefi" == true ]; then
-    echo "size=300M, type=ef" | sfdisk --force $drive_path
+    echo "size=300M, type=ef" | sfdisk --force $drive_path -N 1
     mkfs.fat -F32 "$drive_path"1
 else
-    echo "size=200M, type=83" | sfdisk --force $drive_path
+    echo "size=200M, type=83" | sfdisk --force $drive_path -N 1
     mkfs.ext4 "$drive_path"1
 fi
 
@@ -63,7 +63,7 @@ swap_size_bytes=$(echo "$swap_size * 1.5 * 1024 * 1024 * 1024" | bc)
 
 # Create swap partition
 echo "Creating swap partition..."
-echo "size=$swap_size_bytes, type=82" | sfdisk $drive_path
+echo "size=$swap_size_bytes, type=82" | sfdisk $drive_path -N 2
 mkswap "$drive_path"2
 # Check total disk size
 total_size=$(sfdisk -s $drive_path)
@@ -75,16 +75,16 @@ fi
 
 # Create /mnt partition
 echo "Creating root partition..."
-echo "size=25G, type=83" | sfdisk $drive_path
+echo "size=25G, type=83" | sfdisk $drive_path -N 3
 mkfs.ext4 "$drive_path"3
 # Create home partition
 echo "Creating home partition..."
-echo "," | sfdisk $drive_path
+echo "," | sfdisk $drive_path $drive_path -N 4
 mkfs.ext4 "$drive_path"4
 #Make drives
-mkdir /mnt/{boot,home}
+mkdir -p /mnt/{boot,swap,home}
 mount "$drive_path"1 /mnt/boot
-swapon "$drive_path"2
+swapon "$drive_path"2"
 mount "$drive_path"3 /mnt
 mount "$drive_path"4 /mnt/home
 
@@ -106,7 +106,11 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-
+current_root_device=$(mount | grep "on / " | awk '{print $1}')
+if [[ "$current_root_device" == "$drive_path"* ]]; then
+    echo "You cannot install Arch Linux on the drive containing the current root partition."
+    exit 1
+fi
 
 pacstrap /mnt base base-devel
 # Install base and base-devel packages
