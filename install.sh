@@ -153,7 +153,7 @@ echo $hostname > /mnt/etc/hostname
 desktop_selected=false
 while [ $desktop_selected == false ]
 do
-    echo "Which desktop environment would you like to install? (gnome, kde, xfce, Cinnamon, type skip to skip this step)"
+    echo "Which desktop environment would you like to install? (gnome, kde, xfce, Cinnamon, type 'skip' to skip this step)""
     read desktop
     if [ $desktop == "skip" ]; then
         echo "Desktop environment selection skipped."
@@ -239,7 +239,7 @@ if
 skip_desktop=false
 while [ $skip_desktop == false ]
 do
-    echo "Which desktop environment would you like to install? (gnome, kde, xfce, Cinnamon, type skip to skip this step)"
+    echo "Which desktop environment would you like to install? (gnome, kde, xfce, Cinnamon, type 'skip' to skip this step)""
     read desktop
     if [ $desktop == "skip" ]; then
         echo "Do you want to skip selecting a desktop environment? (y/n)"
