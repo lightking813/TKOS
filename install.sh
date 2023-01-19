@@ -34,10 +34,10 @@ echo "," | sfdisk $drive_path
 # Create boot partition
 echo "Creating boot partition..."
 if [ "$is_uefi" == true ]; then
-    echo "size=$boot_size, type=ef" | sfdisk $drive_path
+    echo "size=300M, type=ef" | sfdisk $drive_path
     mkfs.fat -F32 "$drive_path"1
 else
-    echo "size=$boot_size, type=83" | sfdisk $drive_path
+    echo "size=200M, type=83" | sfdisk $drive_path
 fi
 
 # Check total disk size
@@ -75,7 +75,7 @@ fi
 
 # Create /mnt partition
 echo "Creating root partition..."
-echo "," | sfdisk $drive_path
+echo "size=25G, type=83" | sfdisk $drive_path
 
 # Create home partition
 echo "Creating home partition..."
