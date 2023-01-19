@@ -82,10 +82,9 @@ echo "Creating home partition..."
 echo "," | sfdisk $drive_path
 
 #Make drives
-mkdir /mnt/{boot,swap,home}
+mkdir /mnt/{boot,home}
 mount "$drive_path"1 /mnt/boot
 mount "$drive_path"3 /mnt
-mount "$drive_path"2 /mnt/swap
 mount "$drive_path"4 /mnt/home
 
 # Install Pre-req's
