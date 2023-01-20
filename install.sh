@@ -59,14 +59,16 @@ if (( swap_size > max_swap )); then
     echo "Invalid swap size. Swap partition must be less than $max_swap GB."
     exit 1
 fi
+#Swap Size Mathematics
 swap_size_bytes=$(echo "$swap_size * 1.5 * 1024 * 1024 * 1024" | bc)
+swap_sizeG=$(echo "scale=3; $swap_size_bytes / 1073741824" | bc)
 
 # Check the partition table
 sfdisk -l $drive_path
 
 # Create swap partition
 echo "Creating swap partition..."
-echo "size=$swap_size_bytes, type=82, start= " | sfdisk $drive_path -N 2
+echo "size=$swap_sizeG, type=82, start= " | sfdisk $drive_path -N 2
 mkswap "$drive_path"2
 swapon "$drive_path"2
 
