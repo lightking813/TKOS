@@ -62,7 +62,7 @@ swap_size_bytes=$(echo "$swap_size * 1.5 * 1024 * 1024 * 1024" | bc)
 
 # Create swap partition
 echo "Creating swap partition..."
-echo "size=$swap_size_bytes, type=82" | sfdisk --force $drive_path -N 2
+echo "size=$swap_size_bytes, type=82" | sfdisk $drive_path -N 2
 mkswap -f "$drive_path"2
 swapon "$drive_path"2
 
@@ -72,7 +72,7 @@ sfdisk -l $drive_path
 
 # Create /mnt partition
 echo "Creating root partition..."
-echo "size=25G, type=83" | sfdisk --force $drive_path -N 3
+echo "size=25G, type=83" | sfdisk $drive_path -N 3
 mkfs.ext4 "$drive_path"3
 
 # Create home partition
