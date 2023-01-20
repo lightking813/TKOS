@@ -76,7 +76,7 @@ mkfs.ext4 "$drive_path"3
 
 # Create home partition
 echo "Creating home partition..."
-echo "size=, type=83, start= " | sfdisk $drive_path -N 4 -A
+echo "size=, type=83, start= " | sfdisk $drive_path -N 4 -a
 mkfs.ext4 "$drive_path"4
 
 # Make drives
