@@ -66,6 +66,7 @@ echo "size=$swap_size_bytes, type=82" | sfdisk --force $drive_path -N 2
 mkswap -f "$drive_path"2
 swapon "$drive_path"2
 
+
 # Check the partition table
 sfdisk -l $drive_path
 
@@ -76,7 +77,7 @@ mkfs.ext4 "$drive_path"3
 
 # Create home partition
 echo "Creating home partition..."
-echo "$drive_path"4 : size=, type=83" | sfdisk $drive_path --append
+echo "$drive_path"4 : "size=, type=83" | sfdisk $drive_path --append
 mkfs.ext4 "$drive_path"4
 
 # Make drives
@@ -85,6 +86,7 @@ mount "$drive_path"1 /mnt/boot
 mkdir /mnt/root
 mount "$drive_path"3 /mnt/root
 mount "$drive_path"4 /mnt/home
+
 
 # Install Pre-req's
 if ! mount | grep -q '/mnt/boot'; then
