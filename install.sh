@@ -71,7 +71,7 @@ swapon "$drive_path"2
 
 # Create /mnt partition
 echo "Creating root partition..."
-echo "size=25G, type=83" | sfdisk $drive_path -N 3
+echo "size=25G, type=83" | sfdisk $drive_path -A 3
 mkfs.ext4 "$drive_path"3
 
 # Create home partition
