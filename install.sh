@@ -80,7 +80,7 @@ mkfs.ext4 "$drive_path"4
 # Make drives
 mkdir -p /mnt/{boot,swap,root,home}
 mount "$drive_path"1 /mnt/boot
-mkswap "$drive_path"2
+mkswap -f "$drive_path"2
 swapon "$drive_path"2
 mkdir /mnt/root
 mount "$drive_path"3 /mnt/root
