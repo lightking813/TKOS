@@ -65,13 +65,12 @@ echo "Creating swap partition..."
 echo "size=$swap_size_bytes, type=82" | sfdisk $drive_path -N 2
 lsblk | grep "$drive_path2"
 
-
 # Check the partition table
 sfdisk -l $drive_path
 
 # Create /mnt partition
 echo "Creating root partition..."
-echo "$drive_path"3 : start=, size=25G, type=83 | sfdisk $drive_path --append
+echo "size=25G, type=83" | sfdisk $drive_path -N 3
 mkfs.ext4 "$drive_path"3
 
 # Create home partition
