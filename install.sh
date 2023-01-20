@@ -62,7 +62,9 @@ swap_size_bytes=$(echo "$swap_size * 1.5 * 1024 * 1024 * 1024" | bc)
 
 # Create swap partition
 echo "Creating swap partition..."
-echo "size=$swap_size_bytes, type=82" | sfdisk $drive_path --append
+echo "size=$swap_size_bytes, type=82" | sfdisk $drive_path -N 2
+lsblk | grep "$drive_path2"
+
 
 # Check the partition table
 sfdisk -l $drive_path
@@ -80,8 +82,8 @@ mkfs.ext4 "$drive_path"4
 # Make drives
 mkdir -p /mnt/{boot,swap,root,home}
 mount "$drive_path"1 /mnt/boot
-mkswap -f "$drive_path"2
-swapon "$drive_path"2
+mkswap -f "$drive_path2"
+swapon "$drive_path2"
 mkdir /mnt/root
 mount "$drive_path"3 /mnt/root
 mount "$drive_path"4 /mnt/home
