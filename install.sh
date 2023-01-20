@@ -33,10 +33,10 @@ echo "," | sfdisk $drive_path
 # Create boot partition
 echo "Creating boot partition..."
 if [ "$is_uefi" == true ]; then
-    echo "size=300M, type=ef" | sfdisk --force $drive_path -A 1
+    echo "size=300M, type=ef" | sfdisk --force $drive_path -N 1
     mkfs.fat -F32 "$drive_path"1
 else
-    echo "size=200M, type=83" | sfdisk --force $drive_path -A 1
+    echo "size=200M, type=83" | sfdisk --force $drive_path -N 1
     mkfs.ext4 "$drive_path"1
 fi
 
@@ -65,18 +65,18 @@ sfdisk -l $drive_path
 
 # Create swap partition
 echo "Creating swap partition..."
-echo "size=$swap_size_bytes, type=82" | sfdisk $drive_path -A 2
+echo "size=$swap_size_bytes, type=82" | sfdisk $drive_path -N 2
 mkswap "$drive_path"2
 swapon "$drive_path"2
 
 # Create /mnt partition
 echo "Creating root partition..."
-echo "size=25G, type=83" | sfdisk $drive_path -A 3
+echo "size=25G, type=83" | sfdisk $drive_path -N 3
 mkfs.ext4 "$drive_path"3
 
 # Create home partition
 echo "Creating home partition..."
-echo ", type=83" | sfdisk $drive_path -N 4
+echo ", type=83" | sfdisk $drive_path -A 4
 mkfs.ext4 "$drive_path"4
 
 # Make drives
