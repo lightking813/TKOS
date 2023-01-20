@@ -66,7 +66,7 @@ sfdisk -l $drive_path
 
 # Create swap partition
 echo "Creating swap partition..."
-echo "size=$swap_size_bytes, type=82, start= " | sfdisk $drive_path -a
+echo "size=$swap_size_bytes, type=82, start= " | sfdisk $drive_path -N 2
 mkswap "$drive_path"2
 swapon "$drive_path"2
 
