@@ -60,15 +60,14 @@ if (( swap_size > max_swap )); then
 fi
 swap_size_bytes=$(echo "$swap_size * 1.5 * 1024 * 1024 * 1024" | bc)
 
+# Check the partition table
+sfdisk -l $drive_path
+
 # Create swap partition
 echo "Creating swap partition..."
 echo "size=$swap_size_bytes, type=82" | sfdisk $drive_path -N 2
-mkswap -f "$drive_path"2
+mkswap "$drive_path"2
 swapon "$drive_path"2
-
-
-# Check the partition table
-sfdisk -l $drive_path
 
 # Create /mnt partition
 echo "Creating root partition..."
@@ -77,7 +76,7 @@ mkfs.ext4 "$drive_path"3
 
 # Create home partition
 echo "Creating home partition..."
-echo "$drive_path"4 : "size=, type=83" | sfdisk $drive_path --append
+echo ", type=83" | sfdisk $drive_path -N 4
 mkfs.ext4 "$drive_path"4
 
 # Make drives
@@ -86,7 +85,6 @@ mount "$drive_path"1 /mnt/boot
 mkdir /mnt/root
 mount "$drive_path"3 /mnt/root
 mount "$drive_path"4 /mnt/home
-
 
 # Install Pre-req's
 if ! mount | grep -q '/mnt/boot'; then
