@@ -50,36 +50,30 @@ else
 fi
 
 # Ask user for desired swap size
-read -p "Enter desired swap partition size (in GB, less than $max_swap GB): " swap_size
+read -p "Enter desired amount of RAM (in GB): " swap_size
 if ! [[ $swap_size =~ ^[0-9]+$ ]]; then
-    echo "Invalid swap size. Please enter a valid number."
+    echo "Invalid input. Please enter a valid number."
     exit 1
 fi
-if (( swap_size > max_swap )); then
-    echo "Invalid swap size. Swap partition must be less than $max_swap GB."
-    exit 1
-fi
+
 #Swap Size Mathematics
 swap_size_bytes=$(echo "$swap_size * 1.5 * 1024 * 1024 * 1024" | bc)
 swap_sizeG=$(echo "scale=3; $swap_size_bytes / 1073741824" | bc)
 
-# Check the partition table
-sfdisk -l $drive_path
-
 # Create swap partition
-echo "Creating swap partition..."
-echo "size=$swap_sizeG, type=82, start= " | sfdisk $drive_path -N 2
+echo "Creating swap partition with size ${swap_sizeG}G..."
+echo "size=${swap_size_bytes}, type=82, start= " | sfdisk $drive_path -N 2
 mkswap "$drive_path"2
 swapon "$drive_path"2
 
-# Create /mnt partition
-echo "Creating root partition..."
-echo "size=25G, type=83, start= " | sfdisk $drive_path -a -N 3
+# Create root partition
+echo "Creating root partition with size 25G..."
+echo "size=26843545600, type=83, start= " | sfdisk $drive_path -N 3
 mkfs.ext4 "$drive_path"3
 
-# Create home partition
-echo "Creating home partition..."
-echo "size=, type=83, start= " | sfdisk $drive_path -N 4 -a
+#Create home partition
+echo "Creating home partition with remaining disk space..."
+echo "type=83, start= , size= " | sfdisk $drive_path -N 4
 mkfs.ext4 "$drive_path"4
 
 # Make drives
@@ -88,6 +82,8 @@ mount "$drive_path"1 /mnt/boot
 mkdir /mnt/root
 mount "$drive_path"3 /mnt/root
 mount "$drive_path"4 /mnt/home
+# Check the partition table
+sfdisk -l $drive_path
 
 # Install Pre-req's
 if ! mount | grep -q '/mnt/boot'; then
