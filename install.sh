@@ -34,10 +34,10 @@ echo "," | sfdisk $drive_path
 # Create boot partition
 echo "Creating boot partition..."
 if [ "$is_uefi" == true ]; then
-    echo "size=300M, type=ef" | sfdisk --force $drive_path -N 1
+    echo "size=300M, "
     mkfs.fat -F32 "$drive_path"1
 else
-    echo "size=200M, type=83" | sfdisk --force $drive_path -N 1
+    echo "size=200M, "
     mkfs.ext4 "$drive_path"1
 fi
 
@@ -62,7 +62,7 @@ swap_sizeG=$(echo "scale=3; $swap_size_bytes / 1073741824" | bc)
 
 # Create swap partition
 echo "Creating swap partition with size ${swap_sizeG}G..."
-echo "size=${swap_size_bytes}, type=82, start= " | sfdisk $drive_path -N 2
+echo "size=${swap_size_bytes}," 
 mkswap "$drive_path"2
 swapon "$drive_path"2
 
