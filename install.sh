@@ -3,10 +3,8 @@
 # Check if user is using UEFI
 if [ -d "/sys/firmware/efi" ]; then
     is_uefi=true
-    boot_size=300m
 else
     is_uefi=false
-    boot_size=200m
 fi
 
 # Ask user which drive to install Arch on
@@ -33,11 +31,11 @@ fi
 # Create boot partition
 echo "Creating boot partition..."
 if [ "$is_uefi" == true ]; then
-    parted -s "$drive_path" mkpart primary fat32 1 "$boot_size"
+    parted -a optimal $drive_path mkpart primary fat32 1MiB 300m
     parted -s "$drive_path" set 1 esp on
     mkfs.fat -F32 "$drive_path"1
 else
-    parted -s "$drive_path" mkpart primary ext4 1 "$boot_size"
+    parted -a optimal $drive_path mkpart primary ext4 1MiB 200m
     mkfs.ext4 "$drive_path"1
 fi
 
