@@ -51,38 +51,25 @@ fi
 read -p "Enter desired amount of RAM (in GB): " swap_size
 if ! [[ $swap_size =~ ^[0-9]+$ ]]; then
     echo "Invalid input. Please enter a valid number."
-    umount -R /mnt
-    wipefs -a "$drive_path"
     exit 1
 fi
 
 #Swap Size Mathematics
-
-# Ask user for desired swap size
-read -p "Enter desired amount of RAM (in GB): " swap_size
-if ! [[ $swap_size =~ ^[0-9]+$ ]]; then
-    echo "Invalid input. Please enter a valid number."
+swap_size_bytes=$(echo "$swap_size * 1.5 * 1024 * 1024 * 1024" | bc)
+if (( swap_size_bytes <= 0 )); then
+    echo "Invalid swap size. Please enter a smaller value."
     exit 1
 fi
+swap_sizeG=$(echo "scale=3; $swap_size_bytes / 1073741824" | bc)
 
-# Calculate swap partition size
-swap_size_bytes=$((swap_size*1024*1024*1024))
-if (( swap_size_bytes < 536870912 )); then
-    echo "Swap size too small. Must be at least 512 MB."
-    exit 1
-fi
-
-if (( swap_size_bytes > (total_size - boot_size - root_size - home_size) )); then
-    echo "Swap size too large. Must be less than $((total_size - boot_size - root_size - home_size)) bytes."
-    exit 1
-fi
 # Create swap partition
 echo "Creating swap partition with size ${swap_sizeG}G..."
-parted $drive_path mkpart primary linux-swap $(($(echo $boot_size | sed 's/M//') * 1024 * 1024 + 1)) $(($(echo $boot_size | sed 's/M//') * 1024 * 1024 + $swap_size * 1024 * 1024 + 1))
-if [ "$?" -ne 0 ]; then
-    echo "Failed to create swap partition. Unmounting and formatting drive..."
-    umount -R /mnt
-    wipefs -a "$drive_path"
+echo "mkpart primary linux-swap 1MiB ${swap_size_bytes}B"
+parted -a opt $drive_path mkpart primary linux-swap 1MiB ${swap_size_bytes}B
+if [ $? -ne 0 ]; then
+    echo "Failed to create swap partition. Formatting drive and exiting..."
+    umount /mnt/boot /mnt/home /mnt/swap /mnt/root
+    wipefs -a $drive_path
     exit 1
 fi
 mkswap "$drive_path"2
