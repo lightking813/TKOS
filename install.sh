@@ -59,9 +59,25 @@ if ! [[ $swap_size =~ ^[0-9]+$ ]]; then
 fi
 
 #Swap Size Mathematics
-swap_size_bytes=$(echo "$swap_size * 1.5 * 1024 * 1024 * 1024" | bc)
-swap_sizeG=$(echo "scale=3; $swap_size_bytes / 1073741824" | bc)
 
+# Ask user for desired swap size
+read -p "Enter desired amount of RAM (in GB): " swap_size
+if ! [[ $swap_size =~ ^[0-9]+$ ]]; then
+    echo "Invalid input. Please enter a valid number."
+    exit 1
+fi
+
+# Calculate swap partition size
+swap_size_bytes=$((swap_size*1024*1024*1024))
+if (( swap_size_bytes < 536870912 )); then
+    echo "Swap size too small. Must be at least 512 MB."
+    exit 1
+fi
+
+if (( swap_size_bytes > (total_size - boot_size - root_size - home_size) )); then
+    echo "Swap size too large. Must be less than $((total_size - boot_size - root_size - home_size)) bytes."
+    exit 1
+fi
 # Create swap partition
 echo "Creating swap partition with size ${swap_sizeG}G..."
 parted $drive_path mkpart primary linux-swap $(($(echo $boot_size | sed 's/M//') * 1024 * 1024 + 1)) $(($(echo $boot_size | sed 's/M//') * 1024 * 1024 + $swap_size * 1024 * 1024 + 1))
