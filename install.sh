@@ -8,6 +8,7 @@ else
     is_uefi=false
     boot_size=200M
 fi
+
 # Ask user which drive to install Arch on
 lsblk
 read -p "Which drive do you want to install Arch on? (e.g. sda) " drive
@@ -22,27 +23,29 @@ read -p "Do you want to format the drive? (y/n) " choice
 if [ "$choice" == "n" ]; then
     echo "Exiting the script."
     exit 1
-    elif [ "$choice" == "y" ]; then
+elif [ "$choice" == "y" ]; then
     wipefs -a $drive_path
     rm -R /mnt
 fi
 
-# Create a new MBR partition table
+# Create a new partition table
 echo "Creating new partition table..."
-echo "," | sfdisk $drive_path
+parted $drive_path mklabel msdos
 
 # Create boot partition
 echo "Creating boot partition..."
 if [ "$is_uefi" == true ]; then
     echo "size=300M, "
+    parted $drive_path mkpart primary fat32 1 $boot_size
     mkfs.fat -F32 "$drive_path"1
 else
     echo "size=200M, "
+    parted $drive_path mkpart primary ext4 1 $boot_size
     mkfs.ext4 "$drive_path"1
 fi
 
 # Check total disk size
-total_size=$(sfdisk -s $drive_path)
+total_size=$(parted -s $drive_path unit B print | awk '/^Disk/ { print $3 }' | tr -d 'B')
 if (( total_size < 500000000000 )); then
     max_swap=8
 else
@@ -62,18 +65,18 @@ swap_sizeG=$(echo "scale=3; $swap_size_bytes / 1073741824" | bc)
 
 # Create swap partition
 echo "Creating swap partition with size ${swap_sizeG}G..."
-echo "size=${swap_size_bytes}," 
+parted $drive_path mkpart primary linux-swap $boot_size ${swap_size_bytes}
 mkswap "$drive_path"2
 swapon "$drive_path"2
 
 # Create root partition
 echo "Creating root partition with size 25G..."
-echo "size=26843545600, type=83, start= " | sfdisk $drive_path -N 3
+parted $drive_path mkpart primary ext4 ${swap_size_bytes} 25G
 mkfs.ext4 "$drive_path"3
 
 #Create home partition
 echo "Creating home partition with remaining disk space..."
-echo "type=83, start= , size= " | sfdisk $drive_path -N 4
+parted $drive_path mkpart primary ext4 25G 100%
 mkfs.ext4 "$drive_path"4
 
 # Make drives
@@ -82,8 +85,10 @@ mount "$drive_path"1 /mnt/boot
 mkdir /mnt/root
 mount "$drive_path"3 /mnt/root
 mount "$drive_path"4 /mnt/home
+
 # Check the partition table
-sfdisk -l $drive_path
+parted $drive_path print
+
 
 # Install Pre-req's
 if ! mount | grep -q '/mnt/boot'; then
