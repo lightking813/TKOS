@@ -3,10 +3,10 @@
 # Check if user is using UEFI
 if [ -d "/sys/firmware/efi" ]; then
     is_uefi=true
-    boot_size=300M
+    boot_size=300m
 else
     is_uefi=false
-    boot_size=200M
+    boot_size=200m
 fi
 
 # Ask user which drive to install Arch on
