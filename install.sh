@@ -13,7 +13,8 @@ fi
 lsblk
 read -p "Which drive do you want to install Arch on? (e.g. sda) " drive
 drive_path="/dev/$drive"
-if [ ! -b $drive_path ]; then
+
+if [ ! -b "$drive_path" ]; then
    echo "$drive_path does not exist!"
    exit 1
 fi
@@ -24,28 +25,24 @@ if [ "$choice" == "n" ]; then
     echo "Exiting the script."
     exit 1
 elif [ "$choice" == "y" ]; then
-    wipefs -a $drive_path
-    rm -R /mnt
+    umount -R /mnt
+    wipefs -a "$drive_path"
+    parted -s "$drive_path" mklabel msdos
 fi
-
-# Create a new partition table
-echo "Creating new partition table..."
-parted $drive_path mklabel msdos
 
 # Create boot partition
 echo "Creating boot partition..."
 if [ "$is_uefi" == true ]; then
-    echo "size=300M, "
-    parted $drive_path mkpart primary fat32 1 $boot_size
+    parted -s "$drive_path" mkpart primary fat32 1 "$boot_size"
+    parted -s "$drive_path" set 1 esp on
     mkfs.fat -F32 "$drive_path"1
 else
-    echo "size=200M, "
-    parted $drive_path mkpart primary ext4 1 $boot_size
+    parted -s "$drive_path" mkpart primary ext4 1 "$boot_size"
     mkfs.ext4 "$drive_path"1
 fi
 
 # Check total disk size
-total_size=$(parted -s $drive_path unit B print | awk '/^Disk/ { print $3 }' | tr -d 'B')
+total_size=$(parted "$drive_path" unit B print | grep -Po "\d+(?=B disk)")
 if (( total_size < 500000000000 )); then
     max_swap=8
 else
@@ -56,6 +53,8 @@ fi
 read -p "Enter desired amount of RAM (in GB): " swap_size
 if ! [[ $swap_size =~ ^[0-9]+$ ]]; then
     echo "Invalid input. Please enter a valid number."
+    umount -R /mnt
+    wipefs -a "$drive_path"
     exit 1
 fi
 
@@ -65,25 +64,33 @@ swap_sizeG=$(echo "scale=3; $swap_size_bytes / 1073741824" | bc)
 
 # Create swap partition
 echo "Creating swap partition with size ${swap_sizeG}G..."
-parted $drive_path mkpart primary linux-swap $boot_size ${swap_size_bytes}
+parted -s "$drive_path" mkpart primary linux-swap "$boot_size" "+${swap_size_bytes}"
+if [ "$?" -ne 0 ]; then
+    echo "Failed to create swap partition. Unmounting and formatting drive..."
+    umount -R /mnt
+    wipefs -a "$drive_path"
+    exit 1
+fi
 mkswap "$drive_path"2
 swapon "$drive_path"2
 
 # Create root partition
 echo "Creating root partition with size 25G..."
-parted $drive_path mkpart primary ext4 ${swap_size_bytes} 25G
+parted -s "$drive_path" mkpart primary ext4 "+${boot_size}" "25G"
 mkfs.ext4 "$drive_path"3
 
 #Create home partition
 echo "Creating home partition with remaining disk space..."
-parted $drive_path mkpart primary ext4 25G 100%
+parted -s "$drive_path" mkpart primary ext4 "25G" "100%"
 mkfs.ext4 "$drive_path"4
 
-# Make drives
-mkdir -p /mnt/{boot,swap,root,home}
+# Mount partitions
+echo "Mounting partitions..."
+mount "$drive_path"3 /mnt
+mkdir /mnt/boot
 mount "$drive_path"1 /mnt/boot
-mkdir /mnt/root
-mount "$drive_path"3 /mnt/root
+swapon "$drive_path"2
+mkdir /mnt/home
 mount "$drive_path"4 /mnt/home
 
 # Check the partition table
