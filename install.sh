@@ -64,7 +64,7 @@ swap_sizeG=$(echo "scale=3; $swap_size_bytes / 1073741824" | bc)
 
 # Create swap partition
 echo "Creating swap partition with size ${swap_sizeG}G..."
-parted -s "$drive_path" mkpart primary linux-swap "$boot_size" "+${swap_size_bytes}"
+parted $drive_path mkpart primary linux-swap $(($(echo $boot_size | sed 's/M//') * 1024 * 1024 + 1)) $(($(echo $boot_size | sed 's/M//') * 1024 * 1024 + $swap_size * 1024 * 1024 + 1))
 if [ "$?" -ne 0 ]; then
     echo "Failed to create swap partition. Unmounting and formatting drive..."
     umount -R /mnt
