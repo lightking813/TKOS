@@ -3,8 +3,10 @@
 # Check if user is using UEFI
 if [ -d "/sys/firmware/efi" ]; then
     is_uefi=true
+    boot_label="EFI"
 else
     is_uefi=false
+    boot_label="msdos"
 fi
 
 # Ask user which drive to install Arch on
@@ -25,9 +27,12 @@ if [ "$choice" == "n" ]; then
 elif [ "$choice" == "y" ]; then
     umount -R /mnt
     wipefs -a "$drive_path"
-    parted -s "$drive_path" mklabel msdos
+    if [ "$is_uefi" == true ]; then
+        parted -s "$drive_path" mklabel $boot_label
+    else
+        parted -s "$drive_path" mklabel $boot_label mkpart primary ext4 1MiB 200m
+    fi
 fi
-
 # Create boot partition
 echo "Creating boot partition..."
 if [ "$is_uefi" == true ]; then
@@ -38,6 +43,7 @@ else
     parted -a optimal $drive_path mkpart primary ext4 1MiB 200m
     mkfs.ext4 "$drive_path"1
 fi
+
 
 # Check total disk size
 total_size=$(parted "$drive_path" unit B print | grep -Po "\d+(?=B disk)")
