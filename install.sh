@@ -33,6 +33,7 @@ elif [ "$choice" == "y" ]; then
         parted -s "$drive_path" mklabel $boot_label mkpart primary ext4 1MiB 200m
     fi
 fi
+
 # Create boot partition
 echo "Creating boot partition..."
 if [ "$is_uefi" == true ]; then
@@ -43,7 +44,6 @@ else
     parted -a optimal $drive_path mkpart primary ext4 1MiB 200m
     mkfs.ext4 "$drive_path"1
 fi
-
 
 # Check total disk size
 total_size=$(parted "$drive_path" unit B print | grep -Po "\d+(?=B disk)")
@@ -60,13 +60,20 @@ if ! [[ $swap_size =~ ^[0-9]+$ ]]; then
     exit 1
 fi
 
-#Swap Size Mathematics
+# Swap Size Mathematics
 swap_size_bytes=$(echo "$swap_size * 1.5 * 1024 * 1024 * 1024" | bc)
 if (( swap_size_bytes <= 0 )); then
     echo "Invalid swap size. Please enter a smaller value."
     exit 1
 fi
-swap_sizeG=$(echo "scale=3; $swap_size_bytes / 1073741824" | bc)
+
+if (( swap_size_bytes > max_swap * 1024 * 1024 * 1024 )); then
+    echo "Desired swap size is too large. Using maximum swap size (${max_swap}G) instead."
+    swap_size_bytes=$(echo "$max_swap * 1024 * 1024 * 1024" | bc)
+    swap_sizeG=$max_swap
+else
+    swap_sizeG=$(echo "scale=3; $swap_size_bytes / 1073741824" | bc)
+fi
 
 # Create swap partition
 echo "Creating swap partition with size ${swap_sizeG}G..."
@@ -83,12 +90,12 @@ swapon "$drive_path"2
 
 # Create root partition
 echo "Creating root partition with size 25G..."
-parted -s "$drive_path" mkpart primary ext4 "+${boot_size}" "25G"
+parted -s "$drive_path" mkpart primary ext4 "25G"
 mkfs.ext4 "$drive_path"3
 
 #Create home partition
 echo "Creating home partition with remaining disk space..."
-parted -s "$drive_path" mkpart primary ext4 "25G" "100%"
+parted -s "$drive_path" mkpart primary ext4 "100%"
 mkfs.ext4 "$drive_path"4
 
 # Mount partitions
