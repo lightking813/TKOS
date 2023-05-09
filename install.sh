@@ -54,7 +54,7 @@ fi
 
         # Create swap partition
         echo "Creating swap partition with size ${swap_size_bytes} bytes..."
-        parted -a opt $drive_path mkpart primary linux-swap 1MiB ${swap_size_bytes}B
+        parted -a optimal $drive_path mkpart primary linux-swap 1MiB ${swap_size_bytes}B -a optimal
         if [ $? -ne 0 ]; then
             echo "Failed to create swap partition. Formatting drive and exiting..."
             umount /mnt/boot /mnt/home /mnt/swap /mnt/root
@@ -70,13 +70,13 @@ fi
       echo "The root partition has less than 25GB of free space."
     else
       echo "Creating root partition with size 25G..."
-      parted -s "$drive_path" mkpart primary ext4 "25G"
+      parted -s -a optimal "$drive_path" mkpart primary ext4 "25G" -a optimal
       mkfs.ext4 "$drive_path"3
     fi
 
     # Create home partition
     echo "Creating home partition with remaining disk space..."
-    parted -s "$drive_path" mkpart primary ext4 "100%"
+    parted -s -a optimal "$drive_path" mkpart primary ext4 "100%" -a optimal
     mkfs.ext4 "$drive_path"4
 
     # Mount partitions
