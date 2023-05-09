@@ -29,11 +29,11 @@ elif [ "$choice" == "y" ]; then
     wipefs -a "$drive_path"
      parted -s "$drive_path" mklabel $boot_label
       if [ "$is_uefi" == true ]; then
-        parted -s "$drive_path" mkpart primary 1MiB 300m
+        parted -s "$drive_path" mkpart primary 1MiB 300m -a optimal
         parted -s "$drive_path" set 1 esp on
         mkfs.fat -F32 "$drive_path"1
     else
-        parted -s "$drive_path" mklabel $boot_label mkpart primary ext4 1MiB 200m
+        parted -s "$drive_path" mklabel $boot_label mkpart primary ext4 1MiB 200m -a optimal
     fi
 
     # Create boot partition
