@@ -1,22 +1,15 @@
 #!/bin/bash
 
-# Check if user is using UEFI
-if [ -d "/sys/firmware/efi" ]; then
+# Get the path of the drive to install to
+read -p "Enter the path of the drive to install to: " drive_path
+
+# Check if the drive is using UEFI
+is_uefi=false
+if [ -d "/sys/firmware/efi/" ]; then
     is_uefi=true
-    boot_label="gpt"
+    boot_label=gpt
 else
-    is_uefi=false
-    boot_label="msdos"
-fi
-
-# Ask user which drive to install Arch on
-lsblk
-read -p "Which drive do you want to install Arch on? (e.g. sda) " drive
-drive_path="/dev/$drive"
-
-if [ ! -b "$drive_path" ]; then
-   echo "$drive_path does not exist!"
-   exit 1
+    boot_label=msdos
 fi
 
 # Ask user if they want to format the drive
@@ -27,25 +20,24 @@ if [ "$choice" == "n" ]; then
 elif [ "$choice" == "y" ]; then
     umount -R /mnt
     wipefs -a "$drive_path"
-     parted -s "$drive_path" mklabel $boot_label
-      if [ "$is_uefi" == true ]; then
-        parted -s "$drive_path" mkpart primary 1MiB 300m -a optimal
-        parted -s "$drive_path" set 1 esp on
-        mkfs.fat -F32 "$drive_path"1
-    else
-        parted -s "$drive_path" mklabel $boot_label mkpart primary ext4 1MiB 200m -a optimal
-    fi
-
-    # Create boot partition
-    echo "Creating boot partition..."
+    parted -s $drive_path mklabel gpt # Set the partition table to GPT
     if [ "$is_uefi" == true ]; then
-        parted -a optimal $drive_path mkpart primary fat32 1MiB 300m
-        parted -s "$drive_path" set 1 esp on
-        mkfs.fat -F32 "$drive_path"1
+        parted -s "$drive_path" mkpart primary esp fat32 1MiB -1B -a optimal
     else
-        parted -a optimal $drive_path mkpart primary ext4 1MiB 200m
-        mkfs.ext4 "$drive_path"1
+        parted -s "$drive_path" mkpart primary ext4 1MiB -1B -a optimal
     fi
+fi
+
+# Create boot partition
+echo "Creating boot partition..."
+if [ "$is_uefi" == true ]; then
+    parted -a optimal $drive_path mkpart primary fat32 1MiB 300m -a optimal
+    parted -s "$drive_path" set 1 esp on
+    mkfs.fat -F32 "$drive_path"1
+else
+    parted -a optimal $drive_path mkpart primary ext4 1MiB 200m -a optimal
+    mkfs.ext4 "$drive_path"1
+fi
 
     # Ask user if they want to create a swap partition
     read -p "Do you want to create a swap partition? (y/n) " choice
