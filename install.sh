@@ -32,62 +32,70 @@ elif [ "$choice" == "y" ]; then
     else
         parted -s "$drive_path" mklabel $boot_label mkpart primary ext4 1MiB 200m
     fi
-fi
 
-# Create boot partition
-echo "Creating boot partition..."
-if [ "$is_uefi" == true ]; then
-    parted -a optimal $drive_path mkpart primary fat32 1MiB 300m
-    parted -s "$drive_path" set 1 esp on
-    mkfs.fat -F32 "$drive_path"1
-else
-    parted -a optimal $drive_path mkpart primary ext4 1MiB 200m
-    mkfs.ext4 "$drive_path"1
-fi
-# Ask user if they want to create a swap partition
-read -p "Do you want to create a swap partition? (y/n) " choice
-if [ "$choice" == "n" ]; then
-    echo "Skipping swap partition creation."
-else
-    # Get the amount of RAM installed
-    ram_size=$(free -m | awk '/^Mem:/{print $2}')
-
-    # Calculate the swap size
-    swap_size_bytes=$(echo "$ram_size * 1.5 * 1024 * 1024" | bc)
-
-    # Create swap partition
-    echo "Creating swap partition with size ${swap_size_bytes} bytes..."
-    parted -a opt $drive_path mkpart primary linux-swap 1MiB ${swap_size_bytes}B
-    if [ $? -ne 0 ]; then
-        echo "Failed to create swap partition. Formatting drive and exiting..."
-        umount /mnt/boot /mnt/home /mnt/swap /mnt/root
-        wipefs -a $drive_path
-        exit 1
+    # Create boot partition
+    echo "Creating boot partition..."
+    if [ "$is_uefi" == true ]; then
+        parted -a optimal $drive_path mkpart primary fat32 1MiB 300m
+        parted -s "$drive_path" set 1 esp on
+        mkfs.fat -F32 "$drive_path"1
+    else
+        parted -a optimal $drive_path mkpart primary ext4 1MiB 200m
+        mkfs.ext4 "$drive_path"1
     fi
-    mkswap "$drive_path"2
+
+    # Ask user if they want to create a swap partition
+    read -p "Do you want to create a swap partition? (y/n) " choice
+    if [ "$choice" == "n" ]; then
+        echo "Skipping swap partition creation."
+    else
+        # Get the amount of RAM installed
+        ram_size=$(free -m | awk '/^Mem:/{print $2}')
+
+        # Calculate the swap size
+        swap_size_bytes=$(echo "$ram_size * 1.5 * 1024 * 1024" | bc)
+
+        # Create swap partition
+        echo "Creating swap partition with size ${swap_size_bytes} bytes..."
+        parted -a opt $drive_path mkpart primary linux-swap 1MiB ${swap_size_bytes}B
+        if [ $? -ne 0 ]; then
+            echo "Failed to create swap partition. Formatting drive and exiting..."
+            umount /mnt/boot /mnt/home /mnt/swap /mnt/root
+            wipefs -a $drive_path
+            exit 1
+        fi
+        mkswap "$drive_path"2
+        swapon "$drive_path"2
+    fi
+
+    # Create root partition
+    if [[ $root_space -lt 25G ]]; then
+      echo "The root partition has less than 25GB of free space."
+    else
+      echo "Creating root partition with size 25G..."
+      parted -s "$drive_path" mkpart primary ext4 "25G"
+      mkfs.ext4 "$drive_path"3
+    fi
+
+    # Create home partition
+    echo "Creating home partition with remaining disk space..."
+    parted -s "$drive_path" mkpart primary ext4 "100%"
+    mkfs.ext4 "$drive_path"4
+
+    # Mount partitions
+    echo "Mounting partitions..."
+    mount "$drive_path"3 /mnt
+    mkdir /mnt/boot
+    mount "$drive_path"1 /mnt/boot
     swapon "$drive_path"2
+    mkdir /mnt/home
 
-# Create root partition
-echo "Creating root partition with size 25G..."
-parted -s "$drive_path" mkpart primary ext4 "25G"
-mkfs.ext4 "$drive_path"3
+    # Mount the partitions
+    mount "$drive_path"4 /mnt/home
 
-#Create home partition
-echo "Creating home partition with remaining disk space..."
-parted -s "$drive_path" mkpart primary ext4 "100%"
-mkfs.ext4 "$drive_path"4
-
-# Mount partitions
-echo "Mounting partitions..."
-mount "$drive_path"3 /mnt
-mkdir /mnt/boot
-mount "$drive_path"1 /mnt/boot
-swapon "$drive_path"2
-mkdir /mnt/home
-mount "$drive_path"4 /mnt/home
-
-# Check the partition table
-parted $drive_path print
+    # Check the partition table
+    parted $drive_path print
+fi
 
 
 # Install Pre-req's
@@ -127,7 +135,7 @@ pacman -S networkmanager
 systemctl enable NetworkManager
 fi
 # Install GRUB
-if [ "$is_uefi" == "y" ]; then
+if [ "$is_uefi" == "true" ]; then
     pacman -S grub efibootmgr
     grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB
     if [ $? -ne 0 ]; then echo "grub-install failed"; fi
