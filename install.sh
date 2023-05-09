@@ -3,7 +3,7 @@
 # Check if user is using UEFI
 if [ -d "/sys/firmware/efi" ]; then
     is_uefi=true
-    boot_label="EFI"
+    boot_label="gpt"
 else
     is_uefi=false
     boot_label="msdos"
