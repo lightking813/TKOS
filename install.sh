@@ -45,51 +45,28 @@ else
     mkfs.ext4 "$drive_path"1
 fi
 
-# Check total disk size
-total_size=$(parted "$drive_path" unit B print | grep -Po "\d+(?=B disk)")
-if (( total_size < 500000000000 )); then
-    max_swap=8
+# Ask user if they want to create a swap partition
+read -p "Do you want to create a swap partition? (y/n) " choice
+if [ "$choice" == "n" ]; then
+    echo "Skipping swap partition creation."
 else
-    max_swap=16
-fi
+    # Get the amount of RAM installed
+    ram_size=$(free -m | awk '/^Mem:/{print $2}')
 
-# Ask user for desired swap size
-while true; do
-    read -p "Enter desired amount of RAM (in GB): " swap_size
-    if [[ $swap_size =~ ^[0-9]+$ ]]; then
-        break
-    else
-        echo "Invalid input. Please enter a valid number."
+    # Calculate the swap size
+    swap_size_bytes=$(echo "$ram_size * 1.5 * 1024 * 1024" | bc)
+
+    # Create swap partition
+    echo "Creating swap partition with size ${swap_size_bytes} bytes..."
+    parted -a opt $drive_path mkpart primary linux-swap 1MiB ${swap_size_bytes}B
+    if [ $? -ne 0 ]; then
+        echo "Failed to create swap partition. Formatting drive and exiting..."
+        umount /mnt/boot /mnt/home /mnt/swap /mnt/root
+        wipefs -a $drive_path
+        exit 1
     fi
-done
-
-# Swap Size Mathematics
-swap_size_bytes=$(echo "$swap_size * 1.5 * 1024 * 1024 * 1024" | bc)
-if (( swap_size_bytes <= 0 )); then
-    echo "Invalid swap size. Please enter a smaller value."
-    exit 1
-fi
-
-if (( swap_size_bytes > max_swap * 1024 * 1024 * 1024 )); then
-    echo "Desired swap size is too large. Using maximum swap size (${max_swap}G) instead."
-    swap_size_bytes=$(echo "$max_swap * 1024 * 1024 * 1024" | bc)
-    swap_sizeG=$max_swap
-else
-    swap_sizeG=$(echo "scale=3; $swap_size_bytes / 1073741824" | bc)
-fi
-
-# Create swap partition
-echo "Creating swap partition with size ${swap_sizeG}G..."
-echo "mkpart primary linux-swap 1MiB ${swap_size_bytes}B"
-parted -a opt $drive_path mkpart primary linux-swap 1MiB ${swap_size_bytes}B
-if [ $? -ne 0 ]; then
-    echo "Failed to create swap partition. Formatting drive and exiting..."
-    umount /mnt/boot /mnt/home /mnt/swap /mnt/root
-    wipefs -a $drive_path
-    exit 1
-fi
-mkswap "$drive_path"2
-swapon "$drive_path"2
+    mkswap "$drive_path"2
+    swapon "$drive_path"2
 
 # Create root partition
 echo "Creating root partition with size 25G..."
