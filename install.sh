@@ -44,7 +44,6 @@ else
     parted -a optimal $drive_path mkpart primary ext4 1MiB 200m
     mkfs.ext4 "$drive_path"1
 fi
-
 # Ask user if they want to create a swap partition
 read -p "Do you want to create a swap partition? (y/n) " choice
 if [ "$choice" == "n" ]; then
