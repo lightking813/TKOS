@@ -28,7 +28,7 @@ elif [ "$choice" == "y" ]; then
     umount -R /mnt
     wipefs -a "$drive_path"
     if [ "$is_uefi" == true ]; then
-        parted -s "$drive_path" mklabel $boot_label mkpart primary fat32 1MiB 300m
+        parted -s "$drive_path" mklabel $boot_label mkpart primary esp fat32 1MiB 300m
     else
         parted -s "$drive_path" mklabel $boot_label mkpart primary ext4 1MiB 200m
     fi
