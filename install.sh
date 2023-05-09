@@ -54,11 +54,14 @@ else
 fi
 
 # Ask user for desired swap size
-read -p "Enter desired amount of RAM (in GB): " swap_size
-if ! [[ $swap_size =~ ^[0-9]+$ ]]; then
-    echo "Invalid input. Please enter a valid number."
-    exit 1
-fi
+while true; do
+    read -p "Enter desired amount of RAM (in GB): " swap_size
+    if [[ $swap_size =~ ^[0-9]+$ ]]; then
+        break
+    else
+        echo "Invalid input. Please enter a valid number."
+    fi
+done
 
 # Swap Size Mathematics
 swap_size_bytes=$(echo "$swap_size * 1.5 * 1024 * 1024 * 1024" | bc)
