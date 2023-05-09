@@ -1,7 +1,9 @@
 #!/bin/bash
 
-# Get the path of the drive to install to
-read -p "Enter the path of the drive to install to: " drive_path
+# Ask user which drive to install Arch on
+lsblk
+read -p "Which drive do you want to install Arch on? (e.g. sda) " drive
+drive_path="/dev/$drive"
 
 # Check if the drive is using UEFI
 is_uefi=false
@@ -90,7 +92,6 @@ fi
 
     # Check the partition table
     parted $drive_path print
-fi
 
 
 # Install Pre-req's
