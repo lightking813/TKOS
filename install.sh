@@ -71,9 +71,10 @@ else
 
     # Create swap partition
     echo "Creating swap partition with size ${swap_size_bytes} bytes..."
+    parted -s "$drive_path" mkpart primary linux-swap 1MiB ${swap_size_bytes} -a optimal
     swap_end_sector=$(parted "$drive_path" unit s print free | awk '/Free Space/{gsub(/s/,""); print $3}')
     swap_end_sector=$((swap_end_sector - 1))s
-    parted -s "$drive_path" mkpart primary linux-swap 1MiB "$swap_end_sector" -a optimal
+    parted -s "$drive_path" set 2 linux-swap on
     mkswap "${drive_path}2"
 
     if [ $? -ne 0 ]; then
@@ -85,17 +86,17 @@ else
 fi
 
 # Create root partition
-echo "Creating root partition with size 25G..."
+echo "Creating root partition with size 25GB..."
 root_end_sector=$(parted "$drive_path" unit s print free | awk '/Free Space/{gsub(/s/,""); print $3}')
 root_end_sector=$((root_end_sector - 1))s
-parted -s "$drive_path" mkpart primary ext4 1MiB "$root_end_sector" -a optimal
+parted -s "$drive_path" mkpart primary ext4 1MiB 25GB -a optimal
 mkfs.ext4 "${drive_path}3"
 
 # Create home partition
 echo "Creating home partition with remaining disk space..."
 home_end_sector=$(parted "$drive_path" unit s print free | awk '/Free Space/{gsub(/s/,""); print $3}')
 home_end_sector=$((home_end_sector - 1))s
-parted -s "$drive_path" mkpart primary ext4 "$root_end_sector" "$home_end_sector" -a optimal
+parted -s "$drive_path" mkpart primary ext4 25GB "$home_end_sector" -a optimal
 mkfs.ext4 "${drive_path}4"
 
 
