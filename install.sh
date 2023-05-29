@@ -52,14 +52,11 @@ else
     # Calculate the swap size
     swap_size_bytes=$(echo "$ram_size * 1.5 * 1024 * 1024" | bc)
 
-# Round the swap size to the nearest integer value
-swap_size_mib=$(printf "%.0f" "$((swap_size_bytes / 1024 / 1024))")
-
 # Create swap partition
 echo "Creating swap partition with size ${swap_size_bytes} bytes..."
 
 # Calculate the swap end sector
-swap_end_sector=$((swap_start_sector + swap_size_bytes / sector_size))
+swap_end_sector=$((swap_start_sector + (swap_size_bytes / sector_size) - 1))
 
 # Create swap partition using parted
 parted -s "$drive_path" mkpart primary linux-swap "${swap_start_sector}s" "${swap_end_sector}s"
