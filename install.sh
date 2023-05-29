@@ -33,7 +33,7 @@ echo "Creating boot partition..."
 if [ "$is_uefi" == true ]; then
     parted -s "$drive_path" mkpart primary fat32 1MiB 300m -a optimal
     parted -s "$drive_path" set 1 esp on
-    e2label "${drive_path}1" "Boot Partition"
+    fatlabel "${drive_path}1" "Boot Partition"
     mkfs.fat -F32 "${drive_path}1"
 else
     parted -s "$drive_path" mkpart primary ext4 1MiB 200m -a optimal
@@ -71,13 +71,13 @@ fi
 
 # Create root partition
 echo "Creating root partition with size 25GB..."
-parted -s "$drive_path" mkpart primary ext4 400m 25GB
+parted -s "$drive_path" mkpart primary ext4 ${swap_end_sector}s 25GB
 e2label "${drive_path}3" "Root Partition"
 mkfs.ext4 "${drive_path}3"
 
 # Create home partition
 echo "Creating home partition with remaining disk space..."
-parted -s "$drive_path" mkpart primary ext4 500m 100% -a optimal
+parted -s "$drive_path" mkpart primary ext4 25G 100% -a optimal
 e2label "${drive_path}4" "Home Partition"
 mkfs.ext4 "${drive_path}4"
 
