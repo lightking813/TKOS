@@ -66,18 +66,19 @@ else
 fi
 
 # Create root partition
-if [[ $root_space -lt 25G ]]; then
-  echo "The root partition has less than 25GB of free space."
-else
-  echo "Creating root partition with size 25G..."
-  parted -s "$drive_path" mkpart primary ext4 25G 100% -a optimal
-  mkfs.ext4 "${drive_path}3"
-fi
+echo "Creating root partition with size 25G..."
+root_end_sector=$(parted "$drive_path" unit s print free | awk '/Free Space/{gsub(/s/,""); print $3}')
+root_end_sector=$((root_end_sector - 1))s
+parted -s "$drive_path" mkpart primary ext4 1MiB "$root_end_sector" -a optimal
+mkfs.ext4 "${drive_path}3"
 
 # Create home partition
 echo "Creating home partition with remaining disk space..."
-parted -s "$drive_path" mkpart primary ext4 100% -a optimal
+home_end_sector=$(parted "$drive_path" unit s print free | awk '/Free Space/{gsub(/s/,""); print $3}')
+home_end_sector=$((home_end_sector - 1))s
+parted -s "$drive_path" mkpart primary ext4 "$root_end_sector" "$home_end_sector" -a optimal
 mkfs.ext4 "${drive_path}4"
+
 
 
     # Mount partitions
