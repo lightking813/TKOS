@@ -53,14 +53,8 @@ else
     swap_size_bytes=$(echo "$ram_size * 1.5 * 1024 * 1024" | bc)
 
 # Create swap partition
-echo "Creating swap partition with size ${swap_size_bytes} bytes..."
-# Calculate the start and end sectors for swap partition
-    swap_start_sector=2048  # Modify this value if needed
-    swap_end_sector=$((swap_start_sector + swap_size_bytes / sector_size))
-
-    # Create swap partition using parted
     echo "Creating swap partition with size ${swap_size_bytes} bytes..."
-    parted -s "$drive_path" mkpart primary linux-swap "$swap_start_sector" "$swap_end_sector"
+    parted -s "$drive_path" mkpart primary linux-swap 2048 -1
 if [ $? -ne 0 ]; then
     echo "Failed to create swap partition. Formatting drive and exiting..."
     umount /mnt/boot /mnt/home /mnt/swap /mnt/root
