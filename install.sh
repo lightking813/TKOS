@@ -56,8 +56,13 @@ else
 swap_size_mib=$(printf "%.0f" "$((swap_size_bytes / 1024 / 1024))")
 
 # Create swap partition
-echo "Creating swap partition with size ${swap_size_mib} MiB..."
-parted -s "$drive_path" unit MiB mkpart primary linux-swap 1 "$((1 + swap_size_mib))"
+echo "Creating swap partition with size ${swap_size_bytes} bytes..."
+
+# Calculate the swap end sector
+swap_end_sector=$((swap_start_sector + swap_size_bytes / sector_size))
+
+# Create swap partition using parted
+parted -s "$drive_path" mkpart primary linux-swap "${swap_start_sector}s" "${swap_end_sector}s"
 if [ $? -ne 0 ]; then
     echo "Failed to create swap partition. Formatting drive and exiting..."
     umount /mnt/boot /mnt/home /mnt/swap /mnt/root
