@@ -22,6 +22,8 @@ if [ "$choice" == "n" ]; then
 elif [ "$choice" == "y" ]; then
     umount -R /mnt
     wipefs -a "$drive_path"
+    # Calculate the sector size
+    sector_size=$(blockdev --getss "$drive_path")
     parted -s "$drive_path" mklabel gpt # Set the partition table to GPT
     if [ "$is_uefi" == true ]; then
         parted -s "$drive_path" mkpart primary fat32 1MiB 300m -a optimal
@@ -37,11 +39,25 @@ fi
 # Create boot partition
 echo "Creating boot partition..."
 if [ "$is_uefi" == true ]; then
+    parted -s "$drive_path" mkpart primary fat32 1MiB 300m -a optimal
+    parted -s "$drive_path" set 1 esp on
+    mkfs.fat -F32 "${drive_path}1"
+else
+    parted -s "$drive_path" mkpart primary ext4 1MiB 200m -a optimal
+    parted -s "$drive_path" set 1 esp off
+    mkfs.ext4 "${drive_path}1"
+fi
+
+# Create boot partition
+echo "Creating boot partition..."
+if [ "$is_uefi" == true ]; then
     mkfs.fat -F32 "${drive_path}1"
 else
     mkfs.ext4 "${drive_path}1"
 fi
+
 lsblk
+
 # Ask user if they want to create a swap partition
 read -p "Do you want to create a swap partition? (y/n) " choice
 if [ "$choice" == "n" ]; then
@@ -53,15 +69,19 @@ else
     # Calculate the swap size
     swap_size_bytes=$(echo "$ram_size * 1.5 * 1024 * 1024" | bc)
 
-# Create swap partition
+    # Create swap partition
     echo "Creating swap partition with size ${swap_size_bytes} bytes..."
-        parted -s "$drive_path" mkpart primary linux-swap 1MiB ${swap_size_bytes} -a optimal
-        mkswap "${drive_path}2"
-if [ $? -ne 0 ]; then
-    echo "Failed to create swap partition. Formatting drive and exiting..."
-    umount /mnt/boot /mnt/home /mnt/swap /mnt/root
-    wipefs -a "$drive_path"
-    exit 1   
+    swap_end_sector=$(parted "$drive_path" unit s print free | awk '/Free Space/{gsub(/s/,""); print $3}')
+    swap_end_sector=$((swap_end_sector - 1))s
+    parted -s "$drive_path" mkpart primary linux-swap 1MiB "$swap_end_sector" -a optimal
+    mkswap "${drive_path}2"
+
+    if [ $? -ne 0 ]; then
+        echo "Failed to create swap partition. Formatting drive and exiting..."
+        umount /mnt/boot /mnt/home /mnt/swap /mnt/root
+        wipefs -a "$drive_path"
+        exit 1
+    fi
 fi
 
 # Create root partition
