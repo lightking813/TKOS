@@ -67,9 +67,9 @@ fi
 # Create root partition
 echo "Creating root partition with size 25G..."
 root_end_sector=$((swap_end_sector + (25 * 1024 * 1024 * 1024 / sector_size)))
-parted -s "$drive_path" mkpart primary ext4 "${swap_end_sector}s" "${root_end_sector}s" -a optimal
-mkfs.ext4 "${drive_path}3"
 
+parted -s "$drive_path" mkpart primary ext4 1MiB "${root_end_sector}s" -a optimal
+mkfs.ext4 "${drive_path}3"
 
 # Create home partition
 echo "Creating home partition with remaining disk space..."
