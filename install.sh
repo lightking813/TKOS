@@ -44,7 +44,8 @@ echo "Creating swap partition..."
 ram_size=$(free -m | awk '/^Mem:/{print $2}')
 # Calculate the swap size
 swap_size_bytes=$(echo "$ram_size * 1.5 * 1024 * 1024" | bc)
-parted -s "$drive_path" mkpart primary linux-swap 300m "${swap_size_bytes}s" -a optimal
+swap_end_sector=$((1 + swap_size_bytes / sector_size))
+parted -s "$drive_path" mkpart primary linux-swap 300m "${swap_end_sector}s" -a optimal
 parted -s "$drive_path" set 2 linux-swap on
 mkswap "${drive_path}2"
 
@@ -57,12 +58,13 @@ fi
 
 # Create root partition
 echo "Creating root partition with size 25G..."
-parted -s "$drive_path" mkpart primary ext4 "${swap_size_bytes}s" 25G -a optimal
+root_end_sector=$((swap_end_sector + 25 * 1024 * 1024 * 1024 / sector_size))
+parted -s "$drive_path" mkpart primary ext4 "${swap_end_sector}s" "${root_end_sector}s" -a optimal
 mkfs.ext4 "${drive_path}3"
 
 # Create home partition
 echo "Creating home partition with remaining disk space..."
-parted -s "$drive_path" mkpart primary ext4 25G 100% -a optimal
+parted -s "$drive_path" mkpart primary ext4 "${root_end_sector}s" 100% -a optimal
 mkfs.ext4 "${drive_path}4"
 
 lsblk
