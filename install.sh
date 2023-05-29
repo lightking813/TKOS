@@ -55,7 +55,7 @@ else
 # Create swap partition
 echo "Creating swap partition with size ${swap_size_bytes} bytes..."
 swap_end_sector=$(parted "$drive_path" unit s print free | awk '/Free Space/{gsub(/s/,""); print $3}')
-swap_end_sector=$((swap_end_sector - 1))s
+swap_end_sector=$((swap_end_sector - 1))
 parted -s "$drive_path" mkpart primary linux-swap 1MiB "$swap_end_sector" -a optimal
 if [ $? -ne 0 ]; then
     echo "Failed to create swap partition. Formatting drive and exiting..."
