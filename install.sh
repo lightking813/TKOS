@@ -45,6 +45,11 @@ ram_size=$(free -m | awk '/^Mem:/{print $2}')
 # Calculate the swap size
 swap_size_bytes=$(echo "$ram_size * 1.5 * 1024 * 1024" | bc)
 swap_end_sector=$((1 + swap_size_bytes / sector_size))
+
+# Round up the swap_end_sector if it's not an integer
+if ((swap_size_bytes % sector_size != 0)); then
+    swap_end_sector=$((swap_end_sector + 1))
+fi
 parted -s "$drive_path" mkpart primary linux-swap 300m "${swap_end_sector}s" -a optimal
 parted -s "$drive_path" set 2 linux-swap on
 mkswap "${drive_path}2"
