@@ -56,7 +56,7 @@ else
 echo "Creating swap partition with size ${swap_size_bytes} bytes..."
 
 # Calculate the swap end sector
-swap_end_sector=$(echo "$swap_start_sector + ($swap_size_bytes / $sector_size) - 1" | bc)
+swap_end_sector=$(echo "$swap_start_sector + ($swap_size_bytes / $sector_size) - 1")
 
 # Create swap partition using parted
 parted -s "$drive_path" mkpart primary linux-swap "$swap_start_sector" "$swap_end_sector"
