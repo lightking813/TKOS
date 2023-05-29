@@ -59,7 +59,7 @@ echo "Creating swap partition with size ${swap_size_bytes} bytes..."
 swap_end_sector=$((swap_start_sector + (swap_size_bytes / sector_size) - 1))
 
 # Create swap partition using parted
-parted -s "$drive_path" mkpart primary linux-swap "${swap_start_sector}s" "${swap_end_sector}s"
+parted -s "$drive_path" mkpart primary linux-swap "${swap_start_sector}s" "${swap_end_sector}"
 if [ $? -ne 0 ]; then
     echo "Failed to create swap partition. Formatting drive and exiting..."
     umount /mnt/boot /mnt/home /mnt/swap /mnt/root
