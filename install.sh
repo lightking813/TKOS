@@ -52,17 +52,18 @@ else
     # Calculate the swap size
     swap_size_bytes=$(echo "$ram_size * 1.5 * 1024 * 1024" | bc)
 
-    # Create swap partition
-    echo "Creating swap partition with size ${swap_size_bytes} bytes..."
-    parted -s "$drive_path" mkpart primary linux-swap 1MiB ${swap_size_bytes}B -1 -a optimal
-    if [ $? -ne 0 ]; then
-        echo "Failed to create swap partition. Formatting drive and exiting..."
-        umount /mnt/boot /mnt/home /mnt/swap /mnt/root
-        wipefs -a "$drive_path"
-        exit 1
+# Create swap partition
+echo "Creating swap partition with size ${swap_size_bytes} bytes..."
+swap_end_sector=$(parted "$drive_path" unit s print free | awk '/Free Space/{gsub(/s/,""); print $3}')
+swap_end_sector=$((swap_end_sector - 1))s
+parted -s "$drive_path" mkpart primary linux-swap 1MiB "$swap_end_sector" -a optimal
+if [ $? -ne 0 ]; then
+    echo "Failed to create swap partition. Formatting drive and exiting..."
+    umount /mnt/boot /mnt/home /mnt/swap /mnt/root
+    wipefs -a "$drive_path"
+    exit 1
     fi
     mkswap "${drive_path}2"
-    swapon "${drive_path}2"
 fi
 
 # Create root partition
