@@ -41,7 +41,7 @@ if [ "$is_uefi" == true ]; then
 else
     mkfs.ext4 "${drive_path}1"
 fi
-
+lsblk
 # Ask user if they want to create a swap partition
 read -p "Do you want to create a swap partition? (y/n) " choice
 if [ "$choice" == "n" ]; then
