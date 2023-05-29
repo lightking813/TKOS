@@ -52,10 +52,12 @@ else
     # Calculate the swap size
     swap_size_bytes=$(echo "$ram_size * 1.5 * 1024 * 1024" | bc)
 
+# Round the swap size to the nearest integer value
+swap_size_mib=$(printf "%.0f" "$((swap_size_bytes / 1024 / 1024))")
+
 # Create swap partition
-# Create swap partition
-echo "Creating swap partition with size ${swap_size_bytes} bytes..."
-parted -s "$drive_path" unit MiB mkpart primary linux-swap 1 "$((1 + (swap_size_bytes / 1024 / 1024)))"
+echo "Creating swap partition with size ${swap_size_mib} MiB..."
+parted -s "$drive_path" unit MiB mkpart primary linux-swap 1 "$((1 + swap_size_mib))"
 if [ $? -ne 0 ]; then
     echo "Failed to create swap partition. Formatting drive and exiting..."
     umount /mnt/boot /mnt/home /mnt/swap /mnt/root
