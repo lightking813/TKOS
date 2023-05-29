@@ -50,7 +50,7 @@ swap_end_sector=$((1 + swap_size_bytes / sector_size))
 if ((swap_size_bytes % sector_size != 0)); then
     swap_end_sector=$((swap_end_sector + 1))
 fi
-parted -s "$drive_path" mkpart primary linux-swap 300m "${swap_end_sector}s" -a optimal
+parted -s "$drive_path" mkpart primary linux-swap 300m ${swap_end_sector}s -a optimal
 parted -s "$drive_path" set 2 linux-swap on
 mkswap "${drive_path}2"
 
