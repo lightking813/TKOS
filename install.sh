@@ -15,7 +15,7 @@ else
 fi
 
 # Ask user if they want to format the drive
-read -p "Do you want to format the drive? (y/n) " choice
+read -p "Do you want to format the drive? (y/n) if no is selected script will end" choice
 if [ "$choice" == "n" ]; then
     echo "Exiting the script."
     exit 1
@@ -56,8 +56,6 @@ else
 echo "Creating swap partition with size ${swap_size_bytes} bytes..."
 # Calculate the swap end sector
 swap_end_sector=$((swap_start_sector + (swap_size_bytes / sector_size) - 1))
-swap_end_sector_rounded=$((swap_end_sector + 1))
-swap_end_sector_rounded_ceiled=$(printf "%.0f" "$swap_end_sector_rounded")
 
 # Create swap partition using parted
 parted -s "$drive_path" mkpart primary linux-swap "$swap_start_sector" "$swap_end_sector_rounded_ceiled"
