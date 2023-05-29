@@ -220,22 +220,23 @@ elif [ $desktop == "xfce" ]; then
   fi
   # Cinnamon desktop environment
 elif [ $desktop == "Cinnamon" ]; then
-pacman -S cinnamon
-echo "Which display server would you like to use? (xorg, wayland)"
-read display_server
-if [ $display_server == "xorg" ]; then
-pacman -S xorg-server
-systemctl enable lightdm.service
-echo "exec cinnamon-session" >> /etc/X11/xinit/xinitrc
-desktop_selected=true
-elif [ $display_server == "wayland" ]; then
-pacman -S wayland
-systemctl enable lightdm.service
-echo "exec cinnamon-session" >> /etc/X11/xinit/xinitrc
-desktop_selected=true
-else
-echo "Invalid selection."
-exit
+  pacman -S cinnamon
+  echo "Which display server would you like to use? (xorg, wayland)"
+  read display_server
+  if [ $display_server == "xorg" ]; then
+    pacman -S xorg-server
+    systemctl enable lightdm.service
+    echo "exec cinnamon-session" >> /etc/X11/xinit/xinitrc
+    desktop_selected=true
+  elif [ $display_server == "wayland" ]; then
+    pacman -S wayland
+    systemctl enable lightdm.service
+    echo "exec cinnamon-session" >> /etc/X11/xinit/xinitrc
+    desktop_selected=true
+  else
+    echo "Invalid selection."
+    exit
+  fi
 fi
 
 if
@@ -244,17 +245,16 @@ while [ $skip_desktop == false ]
 do
     echo "Which desktop environment would you like to install? (gnome, kde, xfce, Cinnamon, type 'skip' to skip this step)"
     read desktop
-    if [ $desktop == "skip" ]; then
-        echo "Do you want to skip selecting a desktop environment? (y/n)"
-        read skip_desktop
-        if [ $skip_desktop == "n" ]; then
-            skip_desktop=false
-else
-  echo "Skipping desktop environment selection."
-fi
-else
-  echo "Invalid selection."
-  exit
+elif [ $desktop == "skip" ]; then
+    echo "Do you want to skip selecting a desktop environment? (y/n)"
+    read skip_desktop
+    if [ $skip_desktop == "n" ]; then
+        skip_desktop=false
+    else
+        echo "Skipping desktop environment selection."
+        skip_desktop=true
+        exit
+    fi
 fi
 
 # Ask user if they want to install Pamac package manager
@@ -323,21 +323,20 @@ hwclock --systohc
 
 # Ask if user is on a laptop
 read -p "Are you on a laptop? (y/n) " is_laptop
-if [ $is_laptop = "y"]
-    then 
-pacman -S tlp
+if [ $is_laptop == "y" ]; then
+    pacman -S tlp
 else
-echo "You are not using a laptop, if you are please install tlp later, it's designed to improve battery life"
+    echo "You are not using a laptop. If you are, please install tlp later as it's designed to improve battery life."
 fi
 # Adding a user
 read -p "Enter the username you want to create: " username
 useradd -m -g wheel $username
 
 # disabling root user
-echo "do you want to disable root user? (y/n)"
+echo "Do you want to disable the root user? (y/n)"
 read disable_root
 if [ $disable_root == "y" ]; then
-  passwd -l root
+    passwd -l root
 fi
 #Unmounting drives and rebooting
 umount -R /mnt
