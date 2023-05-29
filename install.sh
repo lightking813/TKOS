@@ -35,6 +35,8 @@ if [ "$is_uefi" == true ]; then
     parted -s "$drive_path" set 1 esp on
     e2label "${drive_path}1" "Boot Partition"
     mkfs.fat -F32 "${drive_path}1"
+    # Label the disk as GPT
+    parted -s "$drive_path" mklabel gpt
 else
     parted -s "$drive_path" mkpart primary ext4 1MiB 200m -a optimal
     parted -s "$drive_path" set 1 esp off
