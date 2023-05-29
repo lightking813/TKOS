@@ -22,7 +22,7 @@ if [ "$choice" == "n" ]; then
 elif [ "$choice" == "y" ]; then
     umount -R /mnt
     wipefs -a "$drive_path"
-    parted -s $drive_path mklabel gpt # Set the partition table to GPT
+    parted -s "$drive_path" mklabel gpt # Set the partition table to GPT
     if [ "$is_uefi" == true ]; then
         parted -s "$drive_path" mkpart primary esp fat32 1MiB -1s -a optimal
     else
@@ -79,6 +79,7 @@ echo "Creating home partition with remaining disk space..."
 parted -s "$drive_path" mkpart primary ext4 100% -a optimal
 mkfs.ext4 "${drive_path}4"
 
+
     # Mount partitions
     echo "Mounting partitions..."
     mount "$drive_path"3 /mnt
@@ -86,8 +87,6 @@ mkfs.ext4 "${drive_path}4"
     mount "$drive_path"1 /mnt/boot
     swapon "$drive_path"2
     mkdir /mnt/home
-
-    # Mount the partitions
     mount "$drive_path"4 /mnt/home
 
     # Check the partition table
