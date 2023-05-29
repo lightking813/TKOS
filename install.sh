@@ -39,7 +39,12 @@ else
 fi
 
 # Create swap partition
-echo "Creating swap partition..."
+# Ask user if they want to create a swap partition
+read -p "Do you want to create a swap partition? (y/n) " choice
+if [ "$choice" == "n" ]; then
+    echo "Skipping swap partition creation."
+else
+echo "Detecting Ram amount (THIS will use 1.5x the amount you have)..."
 # Get the amount of RAM installed
 ram_size=$(free -m | awk '/^Mem:/{print $2}')
 # Calculate the swap size
@@ -48,7 +53,7 @@ swap_end_sector=$(awk -v size=$swap_size_bytes -v sector=$sector_size 'BEGIN{ pr
 
 # Create swap partition
 echo "Creating swap partition..."
-parted -s "$drive_path" mkpart primary linux-swap 300m ${swap_end_sector}s -a optimal
+parted -s "$drive_path" mkpart primary linux-swap(v1) 300m ${swap_end_sector}s -a optimal
 parted -s "$drive_path" set 2 linux-swap on
 mkswap "${drive_path}2"
 
