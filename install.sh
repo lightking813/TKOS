@@ -35,8 +35,6 @@ if [ "$is_uefi" == true ]; then
     parted -s "$drive_path" set 1 esp on
     e2label "${drive_path}1" "Boot Partition"
     mkfs.fat -F32 "${drive_path}1"
-    # Label the disk as GPT
-    parted -s "$drive_path" mklabel gpt
 else
     parted -s "$drive_path" mkpart primary ext4 1MiB 200m -a optimal
     parted -s "$drive_path" set 1 esp off
@@ -59,7 +57,7 @@ swap_end_sector=$(awk -v size=$swap_size_bytes -v sector=$sector_size 'BEGIN{ pr
 
 # Create swap partition
 echo "Creating swap partition with size ${swap_size_bytes} bytes..."
-parted -s "$drive_path" mkpart primary linux-swap 300m ${swap_end_sector}s
+parted -s "$drive_path" mkpart primary linux-swap 1Mib ${swap_end_sector}s
 swaplabel "${drive_path}2" "Swap Partition"
 parted -s "$drive_path" set 2 linux-swap on
 mkswap "${drive_path}2"
@@ -79,7 +77,7 @@ mkfs.ext4 "${drive_path}3"
 
 # Create home partition
 echo "Creating home partition with remaining disk space..."
-parted -s "$drive_path" mkpart primary ext4 "${root_end_sector}s" 100% -a optimal
+parted -s "$drive_path" mkpart primary ext4 1Mib 100% -a optimal
 e2label "${drive_path}4" "Home Partition"
 mkfs.ext4 "${drive_path}4"
 
