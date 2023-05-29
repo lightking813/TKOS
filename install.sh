@@ -20,7 +20,8 @@ if [ "$choice" == "n" ]; then
     echo "Exiting the script."
     exit 1
 elif [ "$choice" == "y" ]; then
-    umount -R /mnt
+    umount -R /mnt /mnt/boot /mnt/root
+    echo "making sure swap partition isn't still connected"
     swapoff "$drive_path"2
     wipefs -a "$drive_path"
     # Calculate the sector size
@@ -65,11 +66,12 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Create root partition
-echo "Creating root partition with size 25G..."
+# Calculate the end sector for the root partition
 root_end_sector=$((swap_end_sector + (25 * 1024 * 1024 * 1024 / sector_size)))
 
-parted -s "$drive_path" mkpart primary ext4 1MiB "${root_end_sector}s" -a optimal
+# Create root partition
+echo "Creating root partition with size 25GB..."
+parted -s "$drive_path" mkpart primary ext4 "${swap_end_sector}s" "${root_end_sector}s" -a optimal
 mkfs.ext4 "${drive_path}3"
 
 # Create home partition
