@@ -152,111 +152,130 @@ fi
 # Setting hostname
 read -p "Enter the hostname: " hostname
 echo $hostname > /mnt/etc/hostname
-# Setting Desktop Enviroment
+# Setting Desktop Environment
 desktop_selected=false
-while [ $desktop_selected == false ]
-do
-echo "Which desktop environment would you like to install? (gnome kde xfce Cinnamon or type skip to skip this step.)"
+
+while [ $desktop_selected == false ]; do
+    echo "Which desktop environment would you like to install? (gnome, kde, xfce, Cinnamon, or type 'skip' to skip this step)"
     read desktop
-    if [ $desktop == "skip" ]; then
+
+    if [ $desktop = "skip" ]; then
         echo "Desktop environment selection skipped."
         desktop_selected=true
- # gnome desktop environment
-    elif [ $desktop == "gnome" ]; then
+
+    # gnome desktop environment
+    elif [ $desktop = "gnome" ]; then
         pacman -S gnome
         echo "Which display server would you like to use? (xorg, wayland)"
         read display_server
-        if [ $display_server == "xorg" ]; then
+
+        if [ $display_server = "xorg" ]; then
             pacman -S xorg-server
             systemctl enable gdm.service
             echo "exec gnome-session" >> /etc/X11/xinit/xinitrc
             desktop_selected=true
-        elif [ $display_server == "wayland" ]; then
+
+        elif [ $display_server = "wayland" ]; then
             pacman -S wayland
             systemctl enable gdm.service
             echo "exec gnome-session" >> /etc/X11/xinit/xinitrc
             desktop_selected=true
+
         else
             echo "Invalid selection."
             exit
         fi
- # kde desktop environment
-elif [ $desktop == "kde" ]; then
-  pacman -S kde
-  echo "Which display server would you like to use? (xorg, wayland)"
-  read display_server
-  if [ $display_server == "xorg" ]; then
-    pacman -S xorg-server
-    systemctl enable sddm.service
-    echo "exec startplasma-x11" >> /etc/X11/xinit/xinitrc
-    desktop_selected=true
-  elif [ $display_server == "wayland" ]; then
-    pacman -S wayland
-    systemctl enable sddm.service
-    echo "exec startplasma" >> /etc/X11/xinit/xinitrc
-    desktop_selected=true
-  else
-    echo "Invalid selection."
-    exit
-  fi
-# xfce desktop environment
-elif [ $desktop == "xfce" ]; then
-  pacman -S xfce
-  echo "Which display server would you like to use? (xorg, wayland)"
-  read display_server
-  if [ $display_server == "xorg" ]; then
-    pacman -S xorg-server
-    systemctl enable lightdm.service
-    echo "exec startxfce4" >> /etc/X11/xinit/xinitrc
-    desktop_selected=true
-  elif [ $display_server == "wayland" ]; then
-    pacman -S wayland
-    systemctl enable lightdm.service
-    echo "exec startxfce4" >> /etc/X11/xinit/xinitrc
-    desktop_selected=true
-  else
-    echo "Invalid selection."
-    exit
-  fi
-  # Cinnamon desktop environment
-elif [ $desktop == "Cinnamon" ]; then
-  pacman -S cinnamon
-  echo "Which display server would you like to use? (xorg, wayland)"
-  read display_server
-  if [ $display_server == "xorg" ]; then
-    pacman -S xorg-server
-    systemctl enable lightdm.service
-    echo "exec cinnamon-session" >> /etc/X11/xinit/xinitrc
-    desktop_selected=true
-  elif [ $display_server == "wayland" ]; then
-    pacman -S wayland
-    systemctl enable lightdm.service
-    echo "exec cinnamon-session" >> /etc/X11/xinit/xinitrc
-    desktop_selected=true
-  else
-    echo "Invalid selection."
-    exit
-  fi
-fi
 
-if
+    # kde desktop environment
+    elif [ $desktop = "kde" ]; then
+        pacman -S kde
+        echo "Which display server would you like to use? (xorg, wayland)"
+        read display_server
+
+        if [ $display_server = "xorg" ]; then
+            pacman -S xorg-server
+            systemctl enable sddm.service
+            echo "exec startplasma-x11" >> /etc/X11/xinit/xinitrc
+            desktop_selected=true
+
+        elif [ $display_server = "wayland" ]; then
+            pacman -S wayland
+            systemctl enable sddm.service
+            echo "exec startplasma" >> /etc/X11/xinit/xinitrc
+            desktop_selected=true
+
+        else
+            echo "Invalid selection."
+            exit
+        fi
+
+    # xfce desktop environment
+    elif [ $desktop = "xfce" ]; then
+        pacman -S xfce
+        echo "Which display server would you like to use? (xorg, wayland)"
+        read display_server
+
+        if [ $display_server = "xorg" ]; then
+            pacman -S xorg-server
+            systemctl enable lightdm.service
+            echo "exec startxfce4" >> /etc/X11/xinit/xinitrc
+            desktop_selected=true
+
+        elif [ $display_server = "wayland" ]; then
+            pacman -S wayland
+            systemctl enable lightdm.service
+            echo "exec startxfce4" >> /etc/X11/xinit/xinitrc
+            desktop_selected=true
+
+        else
+            echo "Invalid selection."
+            exit
+        fi
+ # Cinnamon desktop environment
+    elif [ $desktop = "Cinnamon" ]; then
+        pacman -S cinnamon
+        echo "Which display server would you like to use? (xorg, wayland)"
+        read display_server
+
+        if [ $display_server = "xorg" ]; then
+            pacman -S xorg-server
+            systemctl enable lightdm.service
+            echo "exec cinnamon-session" >> /etc/X11/xinit/xinitrc
+            desktop_selected=true
+
+        elif [ $display_server = "wayland" ]; then
+            pacman -S wayland
+            systemctl enable lightdm.service
+            echo "exec cinnamon-session" >> /etc/X11/xinit/xinitrc
+            desktop_selected=true
+
+        else
+            echo "Invalid selection."
+            exit
+        fi
+
+    fi
+done
+
 skip_desktop=false
-while [ $skip_desktop == false ]
-do
+
+while [ $skip_desktop == false ]; do
     echo "Which desktop environment would you like to install? (gnome, kde, xfce, Cinnamon, type 'skip' to skip this step)"
     read desktop
-elif [ $desktop == "skip" ]; then
-    echo "Do you want to skip selecting a desktop environment? (y/n)"
-    read skip_desktop
-    if [ $skip_desktop == "n" ]; then
-        skip_desktop=false
-    else
-        echo "Skipping desktop environment selection."
-        skip_desktop=true
-        exit
-    fi
-fi
 
+    if [ $desktop = "skip" ]; then
+        echo "Do you want to skip selecting a desktop environment? (y/n)"
+        read skip_desktop
+
+        if [ $skip_desktop = "n" ]; then
+            skip_desktop=false
+        else
+            echo "Skipping desktop environment selection."
+            skip_desktop=true
+            exit
+        fi
+    fi
+done
 # Ask user if they want to install Pamac package manager
 read -p "Do you want to install a Package Manager? (It works like an appstore) (y/n) " pm
 
