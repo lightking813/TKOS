@@ -362,4 +362,5 @@ umount -R /mnt
 echo "Unmounting all file systems."
 echo "The script is finished. The computer will now reboot."
 echo "Thank you for using my script $username :)"
+fi
 reboot
