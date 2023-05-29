@@ -33,12 +33,12 @@ echo "Creating boot partition..."
 if [ "$is_uefi" == true ]; then
     parted -s "$drive_path" mkpart primary fat32 1MiB 300m -a optimal
     parted -s "$drive_path" set 1 esp on
-    parted -s "$drive_path" set 1 name "/mnt/boot"
+    e2label "${drive_path}1" "Boot Partition"
     mkfs.fat -F32 "${drive_path}1"
 else
     parted -s "$drive_path" mkpart primary ext4 1MiB 200m -a optimal
     parted -s "$drive_path" set 1 esp off
-    parted -s "$drive_path" set 1 name "/mnt/boot"
+    e2label "${drive_path}1" "Boot Partition"
     mkfs.ext4 "${drive_path}1"
 fi
 
@@ -58,7 +58,7 @@ swap_end_sector=$(awk -v size=$swap_size_bytes -v sector=$sector_size 'BEGIN{ pr
 # Create swap partition
 echo "Creating swap partition with size ${swap_size_bytes} bytes..."
 parted -s "$drive_path" mkpart primary linux-swap 300m ${swap_end_sector}s
-parted -s "$drive_path" set 2 name "linux-swap"
+swaplabel "${drive_path}2" "Swap Partition"
 parted -s "$drive_path" set 2 linux-swap on
 mkswap "${drive_path}2"
 
@@ -72,13 +72,13 @@ fi
 # Create root partition
 echo "Creating root partition with size 25GB..."
 parted -s "$drive_path" mkpart primary ext4 1Mib 25GB
-parted -s "$drive_path" set 3 name "mnt"
+e2label "${drive_path}3" "Root Partition"
 mkfs.ext4 "${drive_path}3"
 
 # Create home partition
 echo "Creating home partition with remaining disk space..."
 parted -s "$drive_path" mkpart primary ext4 "${root_end_sector}s" 100% -a optimal
-parted -s "$drive_path" set 4 name "/mnt/home"
+e2label "${drive_path}4" "Home Partition"
 mkfs.ext4 "${drive_path}4"
 
 lsblk
