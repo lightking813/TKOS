@@ -53,7 +53,7 @@ swap_end_sector=$(awk -v size=$swap_size_bytes -v sector=$sector_size 'BEGIN{ pr
 
 # Create swap partition
 echo "Creating swap partition..."
-parted -s "$drive_path" mkpart primary linux-swap(v1) 300m ${swap_end_sector}s -a optimal
+parted -s "$drive_path" mkpart primary linux-swap 300m ${swap_end_sector}s -a optimal
 parted -s "$drive_path" set 2 linux-swap on
 mkswap "${drive_path}2"
 
@@ -66,9 +66,10 @@ fi
 
 # Create root partition
 echo "Creating root partition with size 25G..."
-root_end_sector=$((swap_end_sector + 25 * 1024 * 1024 * 1024 / sector_size))
+root_end_sector=$((swap_end_sector + (25 * 1024 * 1024 * 1024 / sector_size)))
 parted -s "$drive_path" mkpart primary ext4 "${swap_end_sector}s" "${root_end_sector}s" -a optimal
 mkfs.ext4 "${drive_path}3"
+
 
 # Create home partition
 echo "Creating home partition with remaining disk space..."
