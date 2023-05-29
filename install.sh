@@ -28,7 +28,7 @@ elif [ "$choice" == "y" ]; then
         parted -s "$drive_path" set 1 esp on
         mkfs.fat -F32 "${drive_path}1"
     else
-        parted -s "$drive_path" mkpart primary ext4 1MiB -1s -a optimal
+        parted -s "$drive_path" mkpart primary ext4 1MiB -1 -a optimal
         mkfs.ext4 "${drive_path}1"
     fi
 fi
@@ -54,7 +54,7 @@ else
 
     # Create swap partition
     echo "Creating swap partition with size ${swap_size_bytes} bytes..."
-    parted -s "$drive_path" mkpart primary linux-swap 1MiB ${swap_size_bytes}B -1s -a optimal
+    parted -s "$drive_path" mkpart primary linux-swap 1MiB ${swap_size_bytes}B -1 -a optimal
     if [ $? -ne 0 ]; then
         echo "Failed to create swap partition. Formatting drive and exiting..."
         umount /mnt/boot /mnt/home /mnt/swap /mnt/root
@@ -70,13 +70,13 @@ if [[ $root_space -lt 25G ]]; then
   echo "The root partition has less than 25GB of free space."
 else
   echo "Creating root partition with size 25G..."
-  parted -s "$drive_path" mkpart primary ext4 25G 100% -1s -a optimal
+  parted -s "$drive_path" mkpart primary ext4 25G 100% -1 -a optimal
   mkfs.ext4 "${drive_path}3"
 fi
 
 # Create home partition
 echo "Creating home partition with remaining disk space..."
-parted -s "$drive_path" mkpart primary ext4 100% -1s -a optimal
+parted -s "$drive_path" mkpart primary ext4 100% -1 -a optimal
 mkfs.ext4 "${drive_path}4"
 
 
