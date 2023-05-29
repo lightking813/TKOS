@@ -20,7 +20,7 @@ if [ "$choice" == "n" ]; then
     echo "Exiting the script."
     exit 1
 elif [ "$choice" == "y" ]; then
-    umount -R /mnt /mnt/boot /mnt/root
+    umount -R /mnt /mnt/boot /mnt/root /mnt/swap
     echo "making sure swap partition isn't still connected"
     swapoff "$drive_path"2
     wipefs -a "$drive_path"
@@ -55,13 +55,13 @@ swap_end_sector=$(awk -v size=$swap_size_bytes -v sector=$sector_size 'BEGIN{ pr
 
 # Create swap partition
 echo "Creating swap partition..."
-parted -s "$drive_path" mkpart primary linux-swap 300m ${swap_end_sector}s -a optimal
+parted -s "$drive_path" mkpart primary 300m ${swap_end_sector}s -a optimal
 parted -s "$drive_path" set 2 linux-swap on
 mkswap "${drive_path}2"
 
 if [ $? -ne 0 ]; then
     echo "Failed to create swap partition. Formatting drive and exiting..."
-    umount /mnt/boot /mnt/home /mnt/swap /mnt/root
+    umount /mnt/boot /mnt /mnt/swap /mnt/root
     wipefs -a "$drive_path"
     exit 1
 fi
