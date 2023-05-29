@@ -55,7 +55,7 @@ else
 # Create swap partition
 echo "Creating swap partition with size ${swap_size_bytes} bytes..."
 # Calculate the swap end sector
-swap_end_sector=$(echo "$swap_start_sector + ($swap_size_bytes / $sector_size) - 1" | bc)
+swap_end_sector=$((swap_start_sector + (swap_size_bytes / sector_size) - 1))
 
 # Round the swap end sector to the nearest integer
 swap_end_sector=$(printf "%.0f" "$swap_end_sector")
