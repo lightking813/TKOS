@@ -21,6 +21,7 @@ if [ "$choice" == "n" ]; then
     exit 1
 elif [ "$choice" == "y" ]; then
     umount -R /mnt
+    swapoff "$drive_path"2
     wipefs -a "$drive_path"
     # Calculate the sector size
 sector_size=$(blockdev --getss "$drive_path")
