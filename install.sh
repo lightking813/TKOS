@@ -33,19 +33,19 @@ boot_end_sector=$((boot_start_sector + 200 * 1024 * 1024 / sector_size - 1))
 echo "Creating boot partition..."
 if [ "$is_uefi" == true ]; then
     boot_start_sector=$default_start_sector
-    boot_end_sector=$((boot_start_sector + 200 * 1024 * 1024 / sector_size - 1))
-    
-    parted -s "$drive_path" mkpart primary fat32 1MiB 300m -a optimal
+    boot_end_sector=$((boot_start_sector + 300 * 1024 * 1024 / sector_size - 1))
+
+    parted -s "$drive_path" mkpart primary fat32 "${boot_start_sector}s" "${boot_end_sector}s" -a optimal
     parted -s "$drive_path" set 1 esp on
-    fatlabel "${drive_path}1" "/mnt/boot"
+    fatlabel "${drive_path}1" "Boot"
     mkfs.fat -F32 "${drive_path}1"
 else
     boot_start_sector=$default_start_sector
     boot_end_sector=$((boot_start_sector + 200 * 1024 * 1024 / sector_size - 1))
 
-    parted -s "$drive_path" mkpart primary ext4 1MiB 200m -a optimal
+    parted -s "$drive_path" mkpart primary ext4 "${boot_start_sector}s" "${boot_end_sector}s" -a optimal
     parted -s "$drive_path" set 1 esp off
-    e2label "${drive_path}1" "/mnt/boot"
+    e2label "${drive_path}1" "Boot"
     mkfs.ext4 "${drive_path}1"
 fi
 
@@ -55,26 +55,29 @@ read -p "Do you want to create a swap partition? (y/n) " choice
 if [ "$choice" == "n" ]; then
     echo "Skipping swap partition creation."
 else
-echo "Detecting Ram amount (THIS will use 1.5x the amount you have)..."
-# Get the amount of RAM installed
-ram_size=$(free -m | awk '/^Mem:/{print $2}')
- # Calculate the swap size
- swap_size_bytes=$(echo "$ram_size * 1.5 * 1024 * 1024" | bc)
- swap_start_sector=$default_start_sector
- swap_end_sector=$(printf "%.0f" $(echo "($swap_start_sector + $swap_size_bytes / $sector_size - 1)" | bc))
-# Create swap partition
+    echo "Detecting RAM amount (This will use 1.5x the amount you have)..."
+    # Get the amount of RAM installed
+    ram_size=$(free -m | awk '/^Mem:/{print $2}')
+    # Calculate the swap size
+    swap_size_bytes=$((ram_size * 1.5 * 1024 * 1024))
+    
+    # Calculate the start and end sectors for the swap partition
+    swap_start_sector=$((boot_end_sector + 1))
+    swap_end_sector=$((swap_start_sector + swap_size_bytes / sector_size - 1))
+
+    # Create swap partition
     echo "Creating swap partition..."
-    parted -s "$drive_path" mkpart primary linux-swap ${swap_start_sector}s ${swap_end_sector}s -a optimal
+    parted -s "$drive_path" mkpart primary linux-swap "${swap_start_sector}s" "${swap_end_sector}s" -a optimal
     mkswap "${drive_path}2"
 
-if [ $? -ne 0 ]; then
-    echo "Failed to create swap partition. Formatting drive and exiting..."
-    umount /mnt/boot /mnt /mnt/swap /mnt/root
-    swapoff "$drive_path"2
-    wipefs -a "$drive_path"
-    exit 1
+    if [ $? -ne 0 ]; then
+        echo "Failed to create swap partition. Formatting drive and exiting..."
+        umount /mnt/boot /mnt /mnt/swap /mnt/root
+        swapoff "${drive_path}2"
+        wipefs -a "$drive_path"
+        exit 1
+    fi
 fi
-
 # Calculate the root partition size
 root_size_bytes=$((25 * 1024 * 1024 * 1024))
 root_start_sector=$((swap_end_sector + 1))
@@ -82,14 +85,15 @@ root_end_sector=$((root_start_sector + root_size_bytes / sector_size - 1))
 
 # Create root partition
 echo "Creating root partition with size 25GB..."
-parted -s "$drive_path" mkpart primary ext4 ${root_start_sector}s ${root_end_sector}s -a optimal
+parted -s "$drive_path" mkpart primary ext4 "${root_start_sector}s" "${root_end_sector}s" -a optimal
 mkfs.ext4 "${drive_path}3"
 
 # Create home partition with the remaining disk space
 echo "Creating home partition with the remaining disk space..."
-parted -s "$drive_path" mkpart primary ext4 ${root_end_sector}s 100% -a optimal
+parted -s "$drive_path" mkpart primary ext4 "${root_end_sector}s" 100% -a optimal
 mkfs.ext4 "${drive_path}4"
 lsblk
+
 
     # Mount partitions
     echo "Mounting partitions..."
