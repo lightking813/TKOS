@@ -51,15 +51,17 @@ else
 echo "Detecting Ram amount (THIS will use 1.5x the amount you have)..."
 # Get the amount of RAM installed
 ram_size=$(free -m | awk '/^Mem:/{print $2}')
+# Set the default start sector
+default_start_sector=2048
+
 # Calculate the swap size
 swap_size_bytes=$(echo "$ram_size * 1.5 * 1024 * 1024" | bc)
-swap_end_sector=$(awk -v size=$swap_size_bytes -v sector=$sector_size 'BEGIN{ printf "%.0f", (size / sector) + 1 }')
+swap_start_sector=$default_start_sector
+swap_end_sector=$((swap_start_sector + swap_size_bytes / sector_size - 1))
 
 # Create swap partition
-echo "Creating swap partition with size ${swap_size_bytes} bytes..."
-parted -s "$drive_path" mkpart primary linux-swap 300m ${swap_end_sector}s
-swaplabel "${drive_path}2" "Swap Partition"
-parted -s "$drive_path" set 2 linux-swap on
+echo "Creating swap partition..."
+parted -s "$drive_path" mkpart primary linux-swap ${swap_start_sector}s ${swap_end_sector}s -a optimal
 mkswap "${drive_path}2"
 
 if [ $? -ne 0 ]; then
@@ -69,18 +71,20 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Calculate the root partition size
+root_size_bytes=$((25 * 1024 * 1024 * 1024))
+root_start_sector=$((swap_end_sector + 1))
+root_end_sector=$((root_start_sector + root_size_bytes / sector_size - 1))
+
 # Create root partition
 echo "Creating root partition with size 25GB..."
-parted -s "$drive_path" mkpart primary ext4 ${swap_end_sector}s 25GB
-e2label "${drive_path}3" "Root Partition"
+parted -s "$drive_path" mkpart primary ext4 ${root_start_sector}s ${root_end_sector}s -a optimal
 mkfs.ext4 "${drive_path}3"
 
-# Create home partition
-echo "Creating home partition with remaining disk space..."
-parted -s "$drive_path" mkpart primary ext4 25G 100% -a optimal
-e2label "${drive_path}4" "Home Partition"
+# Create home partition with the remaining disk space
+echo "Creating home partition with the remaining disk space..."
+parted -s "$drive_path" mkpart primary ext4 ${root_end_sector}s 100% -a optimal
 mkfs.ext4 "${drive_path}4"
-
 lsblk
 
     # Mount partitions
