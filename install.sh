@@ -57,7 +57,7 @@ default_start_sector=2048
 # Calculate the swap size
 swap_size_bytes=$(echo "$ram_size * 1.5 * 1024 * 1024" | bc)
 swap_start_sector=$default_start_sector
-swap_end_sector=$((swap_start_sector + swap_size_bytes / sector_size - 1))
+swap_end_sector=$(printf "%.0f" $(echo "($swap_start_sector + $swap_size_bytes / $sector_size - 1)" | bc))
 
 # Create swap partition
 echo "Creating swap partition..."
