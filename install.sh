@@ -37,7 +37,7 @@ if [ "$is_uefi" == true ]; then
     
     parted -s "$drive_path" mkpart primary fat32 1MiB 300m -a optimal
     parted -s "$drive_path" set 1 esp on
-    fatlabel "${drive_path}1" "Boot Partition"
+    fatlabel "${drive_path}1" "/mnt/boot"
     mkfs.fat -F32 "${drive_path}1"
 else
     boot_start_sector=$default_start_sector
@@ -45,7 +45,7 @@ else
 
     parted -s "$drive_path" mkpart primary ext4 1MiB 200m -a optimal
     parted -s "$drive_path" set 1 esp off
-    e2label "${drive_path}1" "Boot Partition"
+    e2label "${drive_path}1" "/mnt/boot"
     mkfs.ext4 "${drive_path}1"
 fi
 
