@@ -4,7 +4,8 @@
 lsblk
 read -p "Which drive do you want to install Arch on? (e.g. sda) " drive
 drive_path="/dev/$drive"
-
+sector_size=$(blockdev --getss "$drive_path")
+default_start_sector=$((sector_size * 1))
 # Check if the drive is using UEFI
 is_uefi=false
 if [ -d "/sys/firmware/efi/" ]; then
@@ -22,20 +23,26 @@ if [ "$choice" == "n" ]; then
 elif [ "$choice" == "y" ]; then
     umount -R /mnt /mnt/boot /mnt/root /mnt/swap
     echo "making sure swap partition isn't still connected"
-    swapoff "$drive_path"2
     wipefs -a "$drive_path"
-    # Calculate the sector size
-sector_size=$(blockdev --getss "$drive_path")
-parted -s "$drive_path" mklabel gpt # Set the partition table to GPT
+
+# Calculate the start and end sectors for the boot partition
+boot_start_sector=$default_start_sector
+boot_end_sector=$((boot_start_sector + 200 * 1024 * 1024 / sector_size - 1))
 
 # Create boot partition
 echo "Creating boot partition..."
 if [ "$is_uefi" == true ]; then
+    boot_start_sector=$default_start_sector
+    boot_end_sector=$((boot_start_sector + 200 * 1024 * 1024 / sector_size - 1))
+    
     parted -s "$drive_path" mkpart primary fat32 1MiB 300m -a optimal
     parted -s "$drive_path" set 1 esp on
     fatlabel "${drive_path}1" "Boot Partition"
     mkfs.fat -F32 "${drive_path}1"
 else
+    boot_start_sector=$default_start_sector
+    boot_end_sector=$((boot_start_sector + 200 * 1024 * 1024 / sector_size - 1))
+
     parted -s "$drive_path" mkpart primary ext4 1MiB 200m -a optimal
     parted -s "$drive_path" set 1 esp off
     e2label "${drive_path}1" "Boot Partition"
@@ -51,22 +58,19 @@ else
 echo "Detecting Ram amount (THIS will use 1.5x the amount you have)..."
 # Get the amount of RAM installed
 ram_size=$(free -m | awk '/^Mem:/{print $2}')
-# Set the default start sector
-default_start_sector=2048
-
-# Calculate the swap size
-swap_size_bytes=$(echo "$ram_size * 1.5 * 1024 * 1024" | bc)
-swap_start_sector=$default_start_sector
-swap_end_sector=$(printf "%.0f" $(echo "($swap_start_sector + $swap_size_bytes / $sector_size - 1)" | bc))
-
+ # Calculate the swap size
+ swap_size_bytes=$(echo "$ram_size * 1.5 * 1024 * 1024" | bc)
+ swap_start_sector=$default_start_sector
+ swap_end_sector=$(printf "%.0f" $(echo "($swap_start_sector + $swap_size_bytes / $sector_size - 1)" | bc))
 # Create swap partition
-echo "Creating swap partition..."
-parted -s "$drive_path" mkpart primary linux-swap ${swap_start_sector}s ${swap_end_sector}s -a optimal
-mkswap "${drive_path}2"
+    echo "Creating swap partition..."
+    parted -s "$drive_path" mkpart primary linux-swap ${swap_start_sector}s ${swap_end_sector}s -a optimal
+    mkswap "${drive_path}2"
 
 if [ $? -ne 0 ]; then
     echo "Failed to create swap partition. Formatting drive and exiting..."
     umount /mnt/boot /mnt /mnt/swap /mnt/root
+    swapoff "$drive_path"2
     wipefs -a "$drive_path"
     exit 1
 fi
