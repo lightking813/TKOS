@@ -50,7 +50,7 @@ if [ "$existing_label" = "$boot_label" ]; then
     echo "Disk label '$boot_label' already exists on the drive. Skipping label creation."
 else
     # Create the disk label
-    parted -s "$drive_path" mklabel "$boot_label"
+    parted -s "$drive_path" mklabel "$boot_label" --align=optimal
     if [ $? -ne 0 ]; then
         echo "Failed to create disk label '$boot_label'. Exiting..."
         exit 1
@@ -120,12 +120,14 @@ drive_size_bytes=$(blockdev --getsize64 "$drive_path")
 home_start_sector=$((root_end_sector + 1))
 home_end_sector=$((drive_size_bytes / sector_size - 1))
 
+# Calculate the aligned start sector
+alignment_offset_start=$((alignment - home_start_sector % alignment))
 # Calculate the aligned end sector
-alignment_offset=$((home_start_sector % alignment))
+alignment_offset_end=$((home_end_sector % alignment))
 
 # Adjust the home start and end sectors for alignment
-home_start_sector=$((home_start_sector + alignment_offset))
-home_end_sector=$((home_end_sector - alignment_offset))
+home_start_sector=$((home_start_sector + alignment_offset_start))
+home_end_sector=$((home_end_sector - alignment_offset_end))
 
 # Create home partition with the aligned start and end sectors
 echo "Creating home partition with the remaining disk space..."
