@@ -14,6 +14,12 @@ if [ -d "/sys/firmware/efi/" ]; then
 else
     boot_label=msdos
 fi
+# Check if lowercase labels are supported
+if blkid -V | grep -q "e2fsprogs"; then
+    echo "Lowercase labels are supported."
+else
+    echo "Lowercase labels are not supported."
+fi
 
 # Ask user if they want to format the drive
 read -p "Do you want to format the drive? (y/n) if no is selected script will end. " choice
