@@ -121,13 +121,10 @@ home_start_sector=$((root_end_sector + 1))
 home_end_sector=$((drive_size_bytes / sector_size - 1))
 
 # Calculate the aligned start sector
-alignment_offset_start=$((alignment - home_start_sector % alignment))
-# Calculate the aligned end sector
-alignment_offset_end=$((home_end_sector % alignment))
+alignment_offset_start=$((alignment - (home_start_sector % alignment)))
 
-# Adjust the home start and end sectors for alignment
+# Adjust the home start sector for alignment
 home_start_sector=$((home_start_sector + alignment_offset_start))
-home_end_sector=$((home_end_sector - alignment_offset_end))
 
 # Create home partition with the aligned start and end sectors
 echo "Creating home partition with the remaining disk space..."
