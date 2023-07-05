@@ -44,6 +44,12 @@ elif [ "$choice" == "y" ]; then
     wipefs -a "$drive_path"
 fi
 
+# Check if the drive has been formatted
+lsblk | grep -q "/dev/$drive"
+if [ $? -ne 0 ]; then
+    echo "Partitions have not been created. Exiting script."
+    exit 1
+fi
 # Check if the drive already has a recognized disk label
 existing_label=$(parted -s "$drive_path" print 2>/dev/null | awk '/^Partition Table:/{print $3}')
 if [ "$existing_label" = "$boot_label" ]; then
@@ -172,11 +178,12 @@ fi
 
 pacstrap /mnt base base-devel
 # Install base and base-devel packages
+# Generate fstab
+genfstab -U /mnt >> /mnt/etc/fstab
 # Arch-chroot
 arch-chroot /mnt
 pacman -S neofetch nano
-# Generate fstab
-genfstab -U /mnt >> /mnt/etc/fstab
+
 
 # Install NetworkManager
 pacman -S networkmanager
@@ -189,7 +196,7 @@ if [ "$is_uefi" == "true" ]; then
     if [ $? -ne 0 ]; then echo "grub-install failed"; fi
 else
     pacman -S grub
-    grub-install --target=i386-pc $drive_path
+    grub-install --target=i386-pc $drive_path()
     if [ $? -ne 0 ]; then echo "grub-install failed"; fi
 fi
 grub-mkconfig -o /boot/grub/grub.cfg
