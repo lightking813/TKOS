@@ -17,11 +17,19 @@ else
 fi
 
 # Check if lowercase labels are supported
-if blkid -V | grep -q "e2fsprogs"; then
-    echo "Lowercase labels are supported."
-else
-    echo "Lowercase labels will be converted."
+if [ "$boot_label" = "msdos" ]; then
+    echo "Lowercase labels are not supported. Converting to uppercase."
     boot_label="${boot_label^^}"
+elif [ "$boot_label" = "gpt" ]; then
+    if command -v e2label >/dev/null 2>&1; then
+        echo "Lowercase labels are supported."
+    else
+        echo "Lowercase labels are not supported. Converting to uppercase."
+        boot_label="${boot_label^^}"
+    fi
+else
+    echo "Unsupported boot label type: $boot_label"
+    exit 1
 fi
 
 # Ask user if they want to format the drive
