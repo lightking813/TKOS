@@ -24,15 +24,11 @@ elif [ "$choice" == "y" ]; then
     umount -R /mnt /mnt/boot /mnt/root /mnt/swap
     echo "making sure swap partition isn't still connected"
     wipefs -a "$drive_path"
+fi
 
 # Calculate the start and end sectors for the boot partition
 boot_start_sector=$default_start_sector
-boot_end_sector=$((boot_start_sector + 200 * 1024 * 1024 / sector_size - 1))
-
-# Create boot partition
-echo "Creating boot partition..."
 if [ "$is_uefi" == true ]; then
-    boot_start_sector=$default_start_sector
     boot_end_sector=$((boot_start_sector + 300 * 1024 * 1024 / sector_size - 1))
 
     parted -s "$drive_path" mkpart primary fat32 "${boot_start_sector}s" "${boot_end_sector}s" -a optimal
@@ -40,7 +36,6 @@ if [ "$is_uefi" == true ]; then
     fatlabel "${drive_path}1" "Boot"
     mkfs.fat -F32 "${drive_path}1"
 else
-    boot_start_sector=$default_start_sector
     boot_end_sector=$((boot_start_sector + 200 * 1024 * 1024 / sector_size - 1))
 
     parted -s "$drive_path" mkpart primary ext4 "${boot_start_sector}s" "${boot_end_sector}s" -a optimal
@@ -78,6 +73,7 @@ else
         exit 1
     fi
 fi
+
 # Calculate the root partition size
 root_size_bytes=$((25 * 1024 * 1024 * 1024))
 root_start_sector=$((swap_end_sector + 1))
@@ -92,19 +88,19 @@ mkfs.ext4 "${drive_path}3"
 echo "Creating home partition with the remaining disk space..."
 parted -s "$drive_path" mkpart primary ext4 "${root_end_sector}s" 100% -a optimal
 mkfs.ext4 "${drive_path}4"
+
 lsblk
 
+# Mount partitions
+echo "Mounting partitions..."
+mount "$drive_path"3 /mnt
+mkdir /mnt/boot
+mount "$drive_path"1 /mnt/boot
+mkdir /mnt/home
+mount "$drive_path"4 /mnt/home
 
-    # Mount partitions
-    echo "Mounting partitions..."
-    mount "$drive_path"3 /mnt
-    mkdir /mnt/boot
-    mount "$drive_path"1 /mnt/boot
-    mkdir /mnt/home
-    mount "$drive_path"4 /mnt/home
-
-    # Check the partition table
-    parted $drive_path print
+# Check the partition table
+parted "$drive_path" print
 
 
 # Install Pre-req's
