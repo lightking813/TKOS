@@ -14,13 +14,16 @@ if [ -d "/sys/firmware/efi/" ]; then
 else
     boot_label=msdos
 fi
+
 # Check if lowercase labels are supported
 if blkid -V | grep -q "e2fsprogs"; then
     echo "Lowercase labels are supported."
 else
     echo "Lowercase labels are not supported."
     # Change lowercase label to uppercase
-tune2fs -L "$(blkid -o export /dev/sdX1 | grep LABEL | cut -d= -f2 | tr '[:lower:]' '[:upper:]')" /dev/sdX1
+    drive_label=$(blkid -o export "$drive_path" | grep LABEL | cut -d= -f2)
+    drive_label_uppercase=$(echo "$drive_label" | tr '[:lower:]' '[:upper:]')
+    tune2fs -L "$drive_label_uppercase" "$drive_path"
 fi
 
 # Ask user if they want to format the drive
@@ -50,66 +53,6 @@ else
     parted -s "$drive_path" set 1 esp off
     e2label "${drive_path}1" "Boot"
     mkfs.ext4 "${drive_path}1"
-fi
-
-# Create swap partition
-# Ask user if they want to create a swap partition
-read -p "Do you want to create a swap partition? (y/n) " choice
-if [ "$choice" == "n" ]; then
-    echo "Skipping swap partition creation."
-else
-    echo "Detecting RAM amount (This will use 1.5x the amount you have)..."
-    # Get the amount of RAM installed
-    ram_size=$(free -m | awk '/^Mem:/{print $7}')
-    # Calculate the swap size
-    swap_size_bytes=$((ram_size * 1.5 * 1024 * 1024))
-    
-    # Calculate the start and end sectors for the swap partition
-    swap_start_sector=$((boot_end_sector + 1))
-    swap_end_sector=$((swap_start_sector + swap_size_bytes / sector_size - 1))
-
-    # Create swap partition
-    echo "Creating swap partition..."
-    parted -s "$drive_path" mkpart primary linux-swap "${swap_start_sector}s" "${swap_end_sector}s" -a optimal
-    mkswap "${drive_path}2"
-
-    if [ $? -ne 0 ]; then
-        echo "Failed to create swap partition. Formatting drive and exiting..."
-        umount /mnt/boot /mnt /mnt/swap /mnt/root
-        swapoff "${drive_path}2"
-        wipefs -a "$drive_path"
-        exit 1
-    fi
-fi
-
-# Calculate the root partition size
-root_size_bytes=$((25 * 1024 * 1024 * 1024))
-root_start_sector=$((swap_end_sector + 1))
-root_end_sector=$((root_start_sector + root_size_bytes / sector_size - 1))
-
-# Create root partition
-echo "Creating root partition with size 25GB..."
-parted -s "$drive_path" mkpart primary ext4 "${root_start_sector}s" "${root_end_sector}s" -a optimal
-mkfs.ext4 "${drive_path}3"
-
-# Create home partition with the remaining disk space
-echo "Creating home partition with the remaining disk space..."
-parted -s "$drive_path" mkpart primary ext4 "${root_end_sector}s" 100% -a optimal
-mkfs.ext4 "${drive_path}4"
-
-lsblk
-
-# Mount partitions
-echo "Mounting partitions..."
-mount "$drive_path"3 /mnt
-mkdir /mnt/boot
-mount "$drive_path"1 /mnt/boot
-mkdir /mnt/home
-mount "$drive_path"4 /mnt/home
-
-# Check the partition table
-parted "$drive_path" print
-
 
 # Install Pre-req's
 if ! mount | grep -q '/mnt/boot'; then
