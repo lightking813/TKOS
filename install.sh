@@ -32,6 +32,19 @@ else
     exit 1
 fi
 
+# Check if the drive already has a recognized disk label
+existing_label=$(parted -s "$drive_path" print 2>/dev/null | awk '/^Partition Table:/{print $3}')
+if [ "$existing_label" = "$boot_label" ]; then
+    echo "Disk label '$boot_label' already exists on the drive. Skipping label creation."
+else
+    # Create the disk label
+    parted -s "$drive_path" mklabel "$boot_label"
+    if [ $? -ne 0 ]; then
+        echo "Failed to create disk label '$boot_label'. Exiting..."
+        exit 1
+    fi
+fi
+
 # Ask user if they want to format the drive
 read -p "Do you want to format the drive? (y/n) If 'n' is selected, the script will end. " choice
 if [ "$choice" == "n" ]; then
