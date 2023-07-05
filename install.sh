@@ -74,6 +74,20 @@ else
     e2label "${drive_path}1" "$boot_label"
     mkfs.ext4 "${drive_path}1"
 fi
+# ...
+existing_label=$(parted -s "$drive_path" print 2>&1 | awk '/^Partition Table:/{print $3}')
+echo "Existing label: $existing_label"  # Add this line for debugging
+if [ "$existing_label" = "$boot_label" ]; then
+    echo "Disk label '$boot_label' already exists on the drive. Skipping label creation."
+else
+    # Create the disk label
+    parted -s "$drive_path" mklabel "$boot_label"
+    if [ $? -ne 0 ]; then
+        echo "Failed to create disk label '$boot_label'. Exiting..."
+        exit 1
+    fi
+fi
+# ...
 
 # Create swap partition
 # Ask user if they want to create a swap partition
