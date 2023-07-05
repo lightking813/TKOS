@@ -23,7 +23,7 @@ else
     # Change lowercase label to uppercase
     drive_label=$(blkid -o export "$drive_path" | grep LABEL | cut -d= -f2)
     drive_label_uppercase=$(echo "$drive_label" | tr '[:lower:]' '[:upper:]')
-    tune2fs -L "$drive_label_uppercase" "$drive_path"
+    e2label "$drive_path" "$drive_label_uppercase"
 fi
 
 # Ask user if they want to format the drive
