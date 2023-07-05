@@ -14,7 +14,6 @@ if [ -d "/sys/firmware/efi/" ]; then
 else
     boot_label=msdos
 fi
-
 # Check if lowercase labels are supported
 if blkid -V | grep -q "e2fsprogs"; then
     echo "Lowercase labels are supported."
@@ -22,8 +21,7 @@ else
     echo "Lowercase labels are not supported."
     # Change lowercase label to uppercase
     drive_label=$(blkid -o export "$drive_path" | grep LABEL | cut -d= -f2)
-    drive_label_uppercase=$(echo "$drive_label" | tr '[:lower:]' '[:upper:]')
-    e2label "$drive_path" "$drive_label_uppercase"
+    e2label "$drive_path" "$(echo $drive_label | tr '[:lower:]' '[:upper:]')"
 fi
 
 # Ask user if they want to format the drive
