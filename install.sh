@@ -130,9 +130,9 @@ mkfs.ext4 "${drive_path}4"
 sleep 10
 
 # Mount partitions
+swapon "${drive_path}2"
 echo "Mounting partitions..."
 if swapon -s | grep -q "${drive_path}2"; then
-    swapon "${drive_path}2"
     echo "Swap disk is configured."
 else
     echo "No swap disk found."
