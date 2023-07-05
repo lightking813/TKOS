@@ -62,14 +62,14 @@ boot_start_sector=$default_start_sector
 if [ "$is_uefi" == true ]; then
     boot_end_sector=$((boot_start_sector + 300 * 1024 * 1024 / sector_size - 1))
 
-    parted -s "$drive_path" mkpart primary fat32 "${boot_start_sector}s" "${boot_end_sector}s" -a optimal -E stride=128,stripe-width=128
+    parted -s "$drive_path" mkpart primary fat32 "${boot_start_sector}s" "${boot_end_sector}s" --align=optimal
     parted -s "$drive_path" set 1 esp on
     fatlabel "${drive_path}1" "$boot_label"
     mkfs.fat -F32 "${drive_path}1"
 else
     boot_end_sector=$((boot_start_sector + 200 * 1024 * 1024 / sector_size - 1))
 
-    parted -s "$drive_path" mkpart primary ext4 "${boot_start_sector}s" "${boot_end_sector}s" -a optimal -E stride=128,stripe-width=128
+    parted -s "$drive_path" mkpart primary ext4 "${boot_start_sector}s" "${boot_end_sector}s" --align=optimal
     parted -s "$drive_path" set 1 esp off
     e2label "${drive_path}1" "$boot_label"
     mkfs.ext4 "${drive_path}1"
@@ -91,9 +91,9 @@ else
     swap_start_sector=$((boot_end_sector + 1))
     swap_end_sector=$((swap_start_sector + swap_size_bytes / sector_size - 1))
 
-    # Create swap partition with optimal alignment
-    echo "Creating swap partition with optimal alignment..."
-    parted -s "$drive_path" mkpart primary linux-swap "${swap_start_sector}s" "${swap_end_sector}s" -a optimal -E stride=128,stripe-width=128
+    # Create swap partition
+    echo "Creating swap partition..."
+    parted -s "$drive_path" mkpart primary linux-swap "${swap_start_sector}s" "${swap_end_sector}s" --align=optimal
     mkswap "${drive_path}2"
 
     if [ $? -ne 0 ]; then
@@ -110,9 +110,9 @@ root_size_bytes=$((25 * 1024 * 1024 * 1024))
 root_start_sector=$((swap_end_sector + 1))
 root_end_sector=$((root_start_sector + root_size_bytes / sector_size - 1))
 
-# Create root partition with optimal alignment
-echo "Creating root partition with size 25GB and optimal alignment..."
-parted -s "$drive_path" mkpart primary ext4 "${root_start_sector}s" "${root_end_sector}s" -a optimal -E stride=128,stripe-width=128
+# Create root partition
+echo "Creating root partition with size 25GB..."
+parted -s "$drive_path" mkpart primary ext4 "${root_start_sector}s" "${root_end_sector}s" --align=optimal
 mkfs.ext4 "${drive_path}3"
 
 # Calculate the remaining space for the home partition
@@ -120,9 +120,9 @@ drive_size_bytes=$(blockdev --getsize64 "$drive_path")
 home_start_sector=$((root_end_sector + 1))
 home_end_sector=$((drive_size_bytes / sector_size - 1))
 
-# Create home partition with the remaining disk space and optimal alignment
-echo "Creating home partition with the remaining disk space and optimal alignment..."
-parted -s "$drive_path" mkpart primary ext4 "${home_start_sector}s" "${home_end_sector}s" -a optimal -E stride=128,stripe-width=128
+# Create home partition with the remaining disk space
+echo "Creating home partition with the remaining disk space..."
+parted -s "$drive_path" mkpart primary ext4 "${home_start_sector}s" "${home_end_sector}s" --align=optimal
 mkfs.ext4 "${drive_path}4"
 
 # Mount partitions
