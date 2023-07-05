@@ -113,6 +113,7 @@ root_end_sector=$((root_start_sector + root_size_bytes / sector_size - 1))
 # Create root partition
 echo "Creating root partition with size 25GB..."
 parted -s "$drive_path" mkpart primary ext4 "${root_start_sector}s" "${root_end_sector}s" --align=optimal
+parted -s "$drive_path" set 3 root on
 mkfs.ext4 "${drive_path}3"
 
 # Calculate the remaining space for the home partition
@@ -122,10 +123,11 @@ home_start_sector=$((root_end_sector + 1))
 # Create home partition with the remaining disk space
 echo "Creating home partition with the remaining disk space..."
 parted -s "$drive_path" mkpart primary ext4 "${home_start_sector}s" 100% --align=optimal
+parted -s "$drive_path" set 4 home on
 mkfs.ext4 "${drive_path}4"
 
 # Delay to allow partition changes to be recognized
-sleep 3
+sleep 1
 
 # Mount partitions
 echo "Mounting partitions..."
