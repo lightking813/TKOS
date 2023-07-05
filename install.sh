@@ -20,32 +20,8 @@ fi
 if blkid -V | grep -q "e2fsprogs"; then
     echo "Lowercase labels are supported."
 else
-    echo "Lowercase labels are not supported."
-    echo "Installing e2fsprogs package..."
-    pacman -Sy --noconfirm e2fsprogs
-fi# Ask user which drive to install Arch on
-lsblk
-read -p "Which drive do you want to install Arch on? (e.g. sda) " drive
-drive_path="/dev/$drive"
-sector_size=$(blockdev --getss "$drive_path")
-default_start_sector=$((sector_size * 1))
-
-# Check if the drive is using UEFI
-is_uefi=false
-if [ -d "/sys/firmware/efi/" ]; then
-    is_uefi=true
-    boot_label=gpt
-else
-    boot_label=msdos
-fi
-
-# Check if lowercase labels are supported
-if blkid -V | grep -q "e2fsprogs"; then
-    echo "Lowercase labels are supported."
-else
-    echo "Lowercase labels are not supported."
-    echo "Installing e2fsprogs package..."
-    pacman -Sy --noconfirm e2fsprogs
+    echo "Lowercase labels will be converted."
+    uppercase_boot_label="${boot_label^^}"
 fi
 
 # Ask user if they want to format the drive
@@ -67,14 +43,22 @@ if [ "$is_uefi" == true ]; then
 
     parted -s "$drive_path" mkpart primary fat32 "${boot_start_sector}s" "${boot_end_sector}s" -a optimal
     parted -s "$drive_path" set 1 esp on
-    fatlabel "${drive_path}1" "Boot"
+    if [ -n "$uppercase_boot_label" ]; then
+        fatlabel "${drive_path}1" "$uppercase_boot_label"
+    else
+        fatlabel "${drive_path}1" "Boot"
+    fi
     mkfs.fat -F32 "${drive_path}1"
 else
     boot_end_sector=$((boot_start_sector + 200 * 1024 * 1024 / sector_size - 1))
 
     parted -s "$drive_path" mkpart primary ext4 "${boot_start_sector}s" "${boot_end_sector}s" -a optimal
     parted -s "$drive_path" set 1 esp off
-    e2label "${drive_path}1" "Boot"
+    if [ -n "$uppercase_boot_label" ]; then
+        e2label "${drive_path}1" "$uppercase_boot_label"
+    else
+        e2label "${drive_path}1" "Boot"
+    fi
     mkfs.ext4 "${drive_path}1"
 fi
 
@@ -128,9 +112,9 @@ lsblk
 # Mount partitions
 echo "Mounting partitions..."
 mount "${drive_path}3" /mnt
-mkdir /mnt/boot
+mkdir -p /mnt/boot
 mount "${drive_path}1" /mnt/boot
-mkdir /mnt/home
+mkdir -p /mnt/home
 mount "${drive_path}4" /mnt/home
 
 # Check the partition table
