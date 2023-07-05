@@ -127,11 +127,16 @@ parted -s "$drive_path" set 4 home on
 mkfs.ext4 "${drive_path}4"
 
 # Delay to allow partition changes to be recognized
-sleep 1
+sleep 10
 
 # Mount partitions
 echo "Mounting partitions..."
-swapon "${drive_path}2"
+if swapon -s | grep -q "${drive_path}2"; then
+    swapon "${drive_path}2"
+    echo "Swap disk is configured."
+else
+    echo "No swap disk found."
+fi
 mount "${drive_path}3" /mnt
 mkdir -p /mnt/boot
 mount "${drive_path}1" /mnt/boot
