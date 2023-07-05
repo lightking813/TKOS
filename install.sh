@@ -44,6 +44,19 @@ elif [ "$choice" == "y" ]; then
     wipefs -a "$drive_path"
 fi
 
+# Check if the drive already has a recognized disk label
+existing_label=$(parted -s "$drive_path" print 2>/dev/null | awk '/^Partition Table:/{print $3}')
+if [ "$existing_label" = "$boot_label" ]; then
+    echo "Disk label '$boot_label' already exists on the drive. Skipping label creation."
+else
+    # Create the disk label
+    parted -s "$drive_path" mklabel "$boot_label"
+    if [ $? -ne 0 ]; then
+        echo "Failed to create disk label '$boot_label'. Exiting..."
+        exit 1
+    fi
+fi
+
 # Calculate the start and end sectors for the boot partition
 boot_start_sector=$default_start_sector
 if [ "$is_uefi" == true ]; then
