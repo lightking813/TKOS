@@ -21,7 +21,7 @@ if blkid -V | grep -q "e2fsprogs"; then
     echo "Lowercase labels are supported."
 else
     echo "Lowercase labels will be converted."
-    uppercase_boot_label="${boot_label^^}"
+    boot_label="${boot_label^^}"
 fi
 
 # Ask user if they want to format the drive
@@ -43,22 +43,14 @@ if [ "$is_uefi" == true ]; then
 
     parted -s "$drive_path" mkpart primary fat32 "${boot_start_sector}s" "${boot_end_sector}s" -a optimal
     parted -s "$drive_path" set 1 esp on
-    if [ -n "$uppercase_boot_label" ]; then
-        fatlabel "${drive_path}1" "$uppercase_boot_label"
-    else
-        fatlabel "${drive_path}1" "Boot"
-    fi
+    fatlabel "${drive_path}1" "$boot_label"
     mkfs.fat -F32 "${drive_path}1"
 else
     boot_end_sector=$((boot_start_sector + 200 * 1024 * 1024 / sector_size - 1))
 
     parted -s "$drive_path" mkpart primary ext4 "${boot_start_sector}s" "${boot_end_sector}s" -a optimal
     parted -s "$drive_path" set 1 esp off
-    if [ -n "$uppercase_boot_label" ]; then
-        e2label "${drive_path}1" "$uppercase_boot_label"
-    else
-        e2label "${drive_path}1" "Boot"
-    fi
+    e2label "${drive_path}1" "$boot_label"
     mkfs.ext4 "${drive_path}1"
 fi
 
