@@ -143,8 +143,7 @@ mount "${drive_path}1" /mnt/boot
 mkdir -p /mnt/home
 mount "${drive_path}4" /mnt/home
 
-# Check the partition table
-parted "$drive_path" print
+# Display disk and partition information
 lsblk
 
 # Install Pre-req's
