@@ -75,19 +75,6 @@ else
     mkfs.ext4 "${drive_path}1"
 fi
 
-# Check if the drive already has a recognized disk label
-existing_label=$(parted -s "$drive_path" print 2>/dev/null | awk '/^Partition Table:/{print $3}')
-if [ "$existing_label" = "$boot_label" ]; then
-    echo "Disk label '$boot_label' already exists on the drive. Skipping label creation."
-else
-    # Create the disk label
-    parted -s "$drive_path" mklabel "$boot_label"
-    if [ $? -ne 0 ]; then
-        echo "Failed to create disk label '$boot_label'. Exiting..."
-        exit 1
-    fi
-fi
-
 # Create swap partition
 # Ask user if they want to create a swap partition
 read -p "Do you want to create a swap partition? (y/n) " choice
@@ -128,17 +115,15 @@ echo "Creating root partition with size 25GB..."
 parted -s "$drive_path" mkpart primary ext4 "${root_start_sector}s" "${root_end_sector}s" -a optimal
 mkfs.ext4 "${drive_path}3"
 
-# Calculate the remaining disk space for the home partition
-remaining_size_bytes=$((total_size_bytes - root_size_bytes))
+# Calculate the remaining space for the home partition
+drive_size_bytes=$(blockdev --getsize64 "$drive_path")
 home_start_sector=$((root_end_sector + 1))
-home_end_sector=$((home_start_sector + remaining_size_bytes / sector_size - 1))
+home_end_sector=$((drive_size_bytes / sector_size - 1))
 
-# Create home partition
+# Create home partition with the remaining disk space
 echo "Creating home partition with the remaining disk space..."
 parted -s "$drive_path" mkpart primary ext4 "${home_start_sector}s" "${home_end_sector}s" -a optimal
 mkfs.ext4 "${drive_path}4"
-
-lsblk
 
 # Mount partitions
 echo "Mounting partitions..."
@@ -151,6 +136,7 @@ mount "${drive_path}4" /mnt/home
 
 # Check the partition table
 parted "$drive_path" print
+lsblk
 
 # Install Pre-req's
 if ! mount | grep -q '/mnt/boot'; then
