@@ -118,17 +118,10 @@ mkfs.ext4 "${drive_path}3"
 # Calculate the remaining space for the home partition
 drive_size_bytes=$(blockdev --getsize64 "$drive_path")
 home_start_sector=$((root_end_sector + 1))
-home_end_sector=$((drive_size_bytes / sector_size - 1))
 
-# Calculate the aligned start sector
-alignment_offset_start=$((alignment - (home_start_sector % alignment)))
-
-# Adjust the home start sector for alignment
-home_start_sector=$((home_start_sector + alignment_offset_start))
-
-# Create home partition with the aligned start and end sectors
+# Create home partition with the remaining disk space
 echo "Creating home partition with the remaining disk space..."
-parted -s "$drive_path" mkpart primary ext4 "${home_start_sector}s" "${home_end_sector}s" --align=optimal
+parted -s "$drive_path" mkpart primary ext4 "${home_start_sector}s" 100% --align=optimal
 mkfs.ext4 "${drive_path}4"
 
 # Mount partitions
