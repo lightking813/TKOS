@@ -128,15 +128,21 @@ echo "Creating root partition with size 25GB..."
 parted -s "$drive_path" mkpart primary ext4 "${root_start_sector}s" "${root_end_sector}s" -a optimal
 mkfs.ext4 "${drive_path}3"
 
-# Create home partition with the remaining disk space
+# Calculate the remaining disk space for the home partition
+remaining_size_bytes=$((total_size_bytes - root_size_bytes))
+home_start_sector=$((root_end_sector + 1))
+home_end_sector=$((home_start_sector + remaining_size_bytes / sector_size - 1))
+
+# Create home partition
 echo "Creating home partition with the remaining disk space..."
-parted -s "$drive_path" mkpart primary ext4 "${root_end_sector}s" 100% -a optimal
+parted -s "$drive_path" mkpart primary ext4 "${home_start_sector}s" "${home_end_sector}s" -a optimal
 mkfs.ext4 "${drive_path}4"
 
 lsblk
 
 # Mount partitions
 echo "Mounting partitions..."
+swapon "${drive_path}2"
 mount "${drive_path}3" /mnt
 mkdir -p /mnt/boot
 mount "${drive_path}1" /mnt/boot
