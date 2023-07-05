@@ -20,8 +20,7 @@ if blkid -V | grep -q "e2fsprogs"; then
 else
     echo "Lowercase labels are not supported."
     # Change lowercase label to uppercase
-    drive_label=$(blkid -o export "$drive_path" | grep LABEL | cut -d= -f2)
-    e2label "$drive_path" "$(echo $drive_label | tr '[:lower:]' '[:upper:]')"
+    pacman -Sy e2fsprogs
 fi
 
 # Ask user if they want to format the drive
