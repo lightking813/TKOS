@@ -124,21 +124,20 @@ echo "Creating home partition with the remaining disk space..."
 parted -s "$drive_path" mkpart primary ext4 "${home_start_sector}s" 100% --align=optimal
 mkfs.ext4 "${drive_path}4"
 
-#Creating the Partition Table
-mkdir -p /mnt/boot
-mkdir -p /mnt/home
-parted "$drive_path" print
 # Delay to allow partition changes to be recognized
-sleep 1
+sleep 3
 
 # Mount partitions
 echo "Mounting partitions..."
 swapon "${drive_path}2"
 mount "${drive_path}3" /mnt
+mkdir -p /mnt/boot
 mount "${drive_path}1" /mnt/boot
+mkdir -p /mnt/home
 mount "${drive_path}4" /mnt/home
 
 # Check the partition table
+parted "$drive_path" print
 lsblk
 
 # Install Pre-req's
