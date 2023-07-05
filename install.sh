@@ -124,6 +124,9 @@ echo "Creating home partition with the remaining disk space..."
 parted -s "$drive_path" mkpart primary ext4 "${home_start_sector}s" 100% --align=optimal
 mkfs.ext4 "${drive_path}4"
 
+# Delay to allow partition changes to be recognized
+sleep 1
+
 # Mount partitions
 echo "Mounting partitions..."
 swapon "${drive_path}2"
