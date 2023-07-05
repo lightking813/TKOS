@@ -19,6 +19,8 @@ if blkid -V | grep -q "e2fsprogs"; then
     echo "Lowercase labels are supported."
 else
     echo "Lowercase labels are not supported."
+    # Change lowercase label to uppercase
+tune2fs -L "$(blkid -o export /dev/sdX1 | grep LABEL | cut -d= -f2 | tr '[:lower:]' '[:upper:]')" /dev/sdX1
 fi
 
 # Ask user if they want to format the drive
@@ -58,7 +60,7 @@ if [ "$choice" == "n" ]; then
 else
     echo "Detecting RAM amount (This will use 1.5x the amount you have)..."
     # Get the amount of RAM installed
-    ram_size=$(free -m | awk '/^Mem:/{print $2}')
+    ram_size=$(free -m | awk '/^Mem:/{print $7}')
     # Calculate the swap size
     swap_size_bytes=$((ram_size * 1.5 * 1024 * 1024))
     
