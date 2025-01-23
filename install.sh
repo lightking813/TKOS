@@ -1,5 +1,55 @@
 #!/bin/bash
 
+# Function to check if we have a Wi-Fi interface
+check_wifi() {
+    # Use `iw dev` to check for Wi-Fi interfaces
+    if iw dev | grep -q "Interface"; then
+        return 0  # Wi-Fi interface found
+    else
+        return 1  # No Wi-Fi interface found
+    fi
+}
+
+# Check if Wi-Fi interface exists
+if check_wifi; then
+    echo "Wi-Fi interface detected."
+    
+    # Ask the user if they want to connect to Wi-Fi
+    read -p "Would you like to connect to a Wi-Fi network? (y/n): " choice
+    if [[ "$choice" =~ ^[Yy]$ ]]; then
+        # Use iwctl or wifi-menu for connection
+        echo "Please select a Wi-Fi network..."
+        # This assumes the system uses `iwctl` or another command to connect to Wi-Fi
+        iwctl station device scan  # Replace 'device' with your network interface name (e.g., wlan0)
+        
+        # List available networks
+        iwctl station device get-networks
+        
+        # Prompt the user to select and connect to a network
+        read -p "Enter the SSID of the network you want to connect to: " ssid
+        read -sp "Enter the Wi-Fi password: " password
+        echo
+
+        # Attempt connection (replace 'device' with your interface, e.g., wlan0)
+        iwctl station device connect "$ssid" "$password"
+        
+        # Check if connection is successful
+        if iwctl station device show | grep -q "Connected"; then
+            echo "Successfully connected to Wi-Fi."
+        else
+            echo "Failed to connect to Wi-Fi. Please check your credentials or network."
+            exit 1
+        fi
+    else
+        echo "Wi-Fi connection skipped."
+    fi
+else
+    echo "No Wi-Fi interface found. Proceeding without Wi-Fi."
+fi
+
+# Continue with the rest of your installation script
+echo "Proceeding with the installation..."
+
 # Ask user which drive to install Arch on
 lsblk
 read -p "Which drive do you want to install Arch on? (e.g. sda) " drive
@@ -11,9 +61,9 @@ default_start_sector=$((sector_size * 1))
 is_uefi=false
 if [ -d "/sys/firmware/efi/" ]; then
     is_uefi=true
-    boot_label=gpt
-else
     boot_label=msdos
+else
+    boot_label=gpt
 fi
 
 # Check if lowercase labels are supported
@@ -79,36 +129,6 @@ else
     parted -s "$drive_path" set 1 esp off
     e2label "${drive_path}1" "$boot_label"
     mkfs.ext4 "${drive_path}1"
-fi
-
-# Create swap partition
-# Ask user if they want to create a swap partition
-read -p "Do you want to create a swap partition? (y/n) " choice
-if [ "$choice" == "n" ]; then
-    echo "Skipping swap partition creation."
-else
-    echo "Detecting RAM amount (This will use 1.5x the amount you have)..."
-    # Get the amount of RAM installed
-    ram_size=$(free -m | awk '/^Mem:/{print $2}')
-    # Calculate the swap size
-    swap_size_bytes=$((ram_size / 2 * 1024 * 1024))
-
-    # Calculate the start and end sectors for the swap partition
-    swap_start_sector=$((boot_end_sector + 1))
-    swap_end_sector=$((swap_start_sector + swap_size_bytes / sector_size - 1))
-
-    # Create swap partition
-    echo "Creating swap partition..."
-    parted -s "$drive_path" mkpart primary linux-swap "${swap_start_sector}s" "${swap_end_sector}s" --align=optimal
-    mkswap "${drive_path}2"
-
-    if [ $? -ne 0 ]; then
-        echo "Failed to create swap partition. Formatting drive and exiting..."
-        umount /mnt/boot /mnt/home 2>/dev/null || true
-        swapoff -a
-        wipefs -a "$drive_path"
-        exit 1
-    fi
 fi
 
 # Calculate the root partition size
@@ -184,6 +204,20 @@ genfstab -U /mnt >> /mnt/etc/fstab
 arch-chroot /mnt
 pacman -S neofetch nano
 
+# Check if a device requires Wi-Fi (for example, check if 'iwconfig' or 'lspci' shows a Wi-Fi device)
+if lspci | grep -i network | grep -i wifi; then
+    echo "Wi-Fi device found. Checking if linux-firmware is installed..."
+
+    # Check if the linux-firmware package is installed (for Arch Linux)
+    if ! pacman -Q linux-firmware &>/dev/null; then
+        echo "linux-firmware not installed. Installing..."
+        sudo pacman -Syu --noconfirm linux-firmware
+    else
+        echo "linux-firmware is already installed."
+    fi
+else
+    echo "No Wi-Fi device found. No need to install linux-firmware."
+fi
 
 # Install NetworkManager
 pacman -S networkmanager
